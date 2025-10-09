@@ -181,6 +181,7 @@
                         </tbody>
                     </table>
                 </div>
+                <button class="btn btn-outline-secondary mt-3 me-2" id="exportAdversarialPrompts">生成結果をエクスポート</button>
                 <button class="btn btn-success mt-3" id="continueToStep5">次のステップへ進む</button>
             </div>
         </div>
@@ -813,6 +814,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('adversarialPromptForm').addEventListener('submit', function(e) {
         e.preventDefault();
         generateAdversarialPrompts();
+    });
+
+    document.getElementById('exportAdversarialPrompts').addEventListener('click', function() {
+        exportAdversarialPrompts();
     });
 
     // Button to proceed from Step 4 to step 5
