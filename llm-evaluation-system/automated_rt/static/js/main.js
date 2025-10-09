@@ -571,6 +571,51 @@ async function generateAdversarialPrompts() {
 }
 
 /**
+ *   Export adversarial prompts as CSV
+ */
+async function exportAdversarialPrompts() {
+    if (!currentSessionId || adversarialPrompts.length === 0) {
+        showToast('エラー', 'エクスポートする敵対的プロンプトがありません', 'danger');
+        return;
+    }
+
+    try {
+        const response = await axios.get('/export_adversarial_prompts', {
+            params: {
+                session_id: currentSessionId
+            },
+            responseType: 'blob'
+        });
+
+        const blob = new Blob([response.data], { type: 'text/csv' });
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+
+        let filename = 'adversarial_prompts.csv';
+        const disposition = response.headers['content-disposition'];
+        if (disposition) {
+            const match = disposition.match(/filename="?([^";]+)"?/i);
+            if (match && match[1]) {
+                filename = decodeURIComponent(match[1]);
+            }
+        }
+
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+
+        showToast('成功', '敵対的プロンプトをCSVとしてエクスポートしました', 'success');
+    } catch (error) {
+        console.error('敵対的プロンプトのエクスポートエラー:', error);
+        const errorMessage = error.response?.data?.detail || error.message || 'エクスポートに失敗しました';
+        showToast('エラー', `敵対的プロンプトのエクスポートに失敗しました: ${errorMessage}`, 'danger');
+    }
+}
+
+/**
  *   Execute evaluation
  */
 async function runEvaluation() {
