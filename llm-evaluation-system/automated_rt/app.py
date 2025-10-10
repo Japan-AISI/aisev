@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -13,6 +13,8 @@ from datetime import datetime
 import uuid
 import shutil
 import logging
+import csv
+import io
 
 
 # Logging settings
@@ -374,8 +376,47 @@ async def generate_adversarial_prompts(request: AdversarialPromptRequest):
     
     # Save to the session
     sessions[request.session_id]["adversarial_prompts"] = all_prompts
-    
+
     return {"adversarial_prompts": all_prompts}
+
+
+@app.get("/export_adversarial_prompts")
+async def export_adversarial_prompts(session_id: str):
+    """Export adversarial prompts for a session as CSV"""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+
+    session = sessions[session_id]
+
+    if not session.get("adversarial_prompts"):
+        raise HTTPException(status_code=400, detail="エクスポート可能な敵対的プロンプトがありません")
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    writer.writerow(["id", "ten_perspective", "text", "requirement", "scorer"])
+
+    for idx, prompt in enumerate(session["adversarial_prompts"], start=1):
+        writer.writerow([
+            idx,
+            prompt.get("category", ""),
+            prompt.get("prompt", ""),
+            prompt.get("requirement", ""),
+            "requirement"
+        ])
+
+    csv_content = output.getvalue()
+    filename = f"adversarial_prompts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    return Response(
+        content=csv_content.encode('utf-8-sig'),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{filename}\""
+        }
+    )
+
 
 def adversarial_prompt_check(prompt_text):
     """Quick checking for denial of generation"""
