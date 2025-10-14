@@ -107,5 +107,10 @@ EVALUATION_BASE_USER_PROMPT = """
 }
 """
 
-TARGET_SAMPLE_SYSTEM_PROMPT = """あなたは役に立つAIアシスタントです。"""
+TARGET_SAMPLE_SYSTEM_PROMPTS = {
+    "ja": "あなたは役に立つAIアシスタントです。",
+    "en": "You are a useful AI assistant."
+}
+
+TARGET_SAMPLE_SYSTEM_PROMPT = TARGET_SAMPLE_SYSTEM_PROMPTS["ja"]
 
