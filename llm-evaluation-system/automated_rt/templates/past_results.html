@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>過去の評価結果 - AIセーフティ評価 自動レッドチーミング</title>
+    <title data-i18n="page.title">過去の評価結果 - AIセーフティ評価 自動レッドチーミング</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* Japanese font settings */
@@ -21,12 +21,19 @@
 </head>
 <body>
     <div class="container mt-4">
-        <h1 class="mb-4">過去の評価結果</h1>
-        
-        <div class="mb-4">
-            <a href="/" class="btn btn-primary">ホームに戻る</a>
+        <div class="d-flex justify-content-end mb-3">
+            <div class="btn-group" role="group" aria-label="Language switch">
+                <button type="button" class="btn btn-outline-secondary active" data-lang="ja" data-i18n="language.japanese">日本語</button>
+                <button type="button" class="btn btn-outline-secondary" data-lang="en" data-i18n="language.english">English</button>
+            </div>
         </div>
-        
+
+        <h1 class="mb-4" data-i18n="page.heading">過去の評価結果</h1>
+
+        <div class="mb-4">
+            <a href="/" class="btn btn-primary" data-i18n="buttons.backHome">ホームに戻る</a>
+        </div>
+
         {% if result_files %}
             <div class="row">
                 {% for file in result_files %}
@@ -36,42 +43,42 @@
                                 <h5 class="card-title mb-0">{{ file.human_date }}</h5>
                             </div>
                             <div class="card-body">
-                                <p><strong>ファイルサイズ:</strong> {{ file.file_size }} KB</p>
-                                <p><strong>セッションID:</strong> {{ file.session_id[:8] }}...</p>
-                                
+                                <p><strong data-i18n="cards.fileSizeLabel">ファイルサイズ:</strong> {{ file.file_size }} KB</p>
+                                <p><strong data-i18n="cards.sessionIdLabel">セッションID:</strong> {{ file.session_id[:8] }}...</p>
+
                                 <div class="card mb-3">
                                     <div class="card-header bg-light">
-                                        <h6 class="mb-0">評価サマリー</h6>
+                                        <h6 class="mb-0" data-i18n="cards.summaryHeading">評価サマリー</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-4 text-center">
                                                 <h5>{{ file.summary.total }}</h5>
-                                                <small class="text-muted">テスト数</small>
+                                                <small class="text-muted" data-i18n="cards.totalTests">テスト数</small>
                                             </div>
                                             <div class="col-4 text-center text-success">
                                                 <h5>{{ file.summary.passed }}</h5>
-                                                <small class="text-muted">合格</small>
+                                                <small class="text-muted" data-i18n="cards.passed">合格</small>
                                             </div>
                                             <div class="col-4 text-center text-danger">
                                                 <h5>{{ file.summary.failed }}</h5>
-                                                <small class="text-muted">不合格</small>
+                                                <small class="text-muted" data-i18n="cards.failed">不合格</small>
                                             </div>
                                         </div>
                                         <div class="progress mt-2">
-                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ file.summary.pass_rate }}%;" 
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ file.summary.pass_rate }}%;"
                                                 aria-valuenow="{{ file.summary.pass_rate }}" aria-valuemin="0" aria-valuemax="100">
                                                 {{ file.summary.pass_rate }}%
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Use two separate buttons instead of a drop-down menu -->
                                 <div class="d-grid gap-2">
-                                    <a href="/past_results/{{ file.filename }}" class="btn btn-primary">詳細を表示</a>
-                                    <a href="/export/html/file/{{ file.filename }}" class="btn btn-success">HTML形式でダウンロード</a>
-                                    <a href="/export/csv/file/{{ file.filename }}" class="btn btn-secondary">CSV形式でダウンロード</a>
+                                    <a href="/past_results/{{ file.filename }}" class="btn btn-primary" data-i18n="buttons.viewDetails">詳細を表示</a>
+                                    <a href="/export/html/file/{{ file.filename }}" class="btn btn-success" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a>
+                                    <a href="/export/csv/file/{{ file.filename }}" class="btn btn-secondary" data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a>
                                 </div>
                             </div>
                         </div>
@@ -79,12 +86,71 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="alert alert-info">
+            <div class="alert alert-info" data-i18n="page.noResults">
                 過去の評価結果がありません。評価を実行すると、結果がここに表示されます。
             </div>
         {% endif %}
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/i18n.js"></script>
+    <script>
+        const pastResultsMessages = {
+            ja: {
+                language: { japanese: "日本語", english: "English" },
+                page: {
+                    title: "過去の評価結果 - AIセーフティ評価 自動レッドチーミング",
+                    heading: "過去の評価結果",
+                    noResults: "過去の評価結果がありません。評価を実行すると、結果がここに表示されます。"
+                },
+                buttons: {
+                    backHome: "ホームに戻る",
+                    viewDetails: "詳細を表示",
+                    downloadHtml: "HTML形式でダウンロード",
+                    downloadCsv: "CSV形式でダウンロード"
+                },
+                cards: {
+                    fileSizeLabel: "ファイルサイズ:",
+                    sessionIdLabel: "セッションID:",
+                    summaryHeading: "評価サマリー",
+                    totalTests: "テスト数",
+                    passed: "合格",
+                    failed: "不合格"
+                }
+            },
+            en: {
+                language: { japanese: "Japanese", english: "English" },
+                page: {
+                    title: "Past Evaluation Results - AI Safety Evaluation Automated Red Teaming",
+                    heading: "Past Evaluation Results",
+                    noResults: "No past evaluation results are available. After you run an evaluation, the results will appear here."
+                },
+                buttons: {
+                    backHome: "Back to Home",
+                    viewDetails: "View Details",
+                    downloadHtml: "Download as HTML",
+                    downloadCsv: "Download as CSV"
+                },
+                cards: {
+                    fileSizeLabel: "File size:",
+                    sessionIdLabel: "Session ID:",
+                    summaryHeading: "Evaluation Summary",
+                    totalTests: "Number of tests",
+                    passed: "Passed",
+                    failed: "Failed"
+                }
+            }
+        };
+
+        automatedRtI18n.register({ messages: pastResultsMessages });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-lang]').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    automatedRtI18n.setLanguage(button.dataset.lang);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
