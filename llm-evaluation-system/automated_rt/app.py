@@ -34,7 +34,16 @@ from models import (
 )
 from results_manager import ResultsManager
 from html_exporter import setup_html_export_routes
-from prompts import REQUIREMENT_BASE_SYSTEM_PROMPT, REQUIREMENT_BASE_USER_PROMPT, ADVERSARIAL_BASE_SYSTEM_PROMPT, ADVERSARIAL_BASE_USER_PROMPT, EVALUATION_BASE_SYSTEM_PROMPT, EVALUATION_BASE_USER_PROMPT, TARGET_SAMPLE_SYSTEM_PROMPT
+from prompts import (
+    REQUIREMENT_BASE_SYSTEM_PROMPT,
+    REQUIREMENT_BASE_USER_PROMPT,
+    ADVERSARIAL_BASE_SYSTEM_PROMPT,
+    ADVERSARIAL_BASE_USER_PROMPT,
+    EVALUATION_BASE_SYSTEM_PROMPT,
+    EVALUATION_BASE_USER_PROMPT,
+    TARGET_SAMPLE_SYSTEM_PROMPTS,
+    TARGET_SAMPLE_SYSTEM_PROMPT,
+)
 
 
 MAX_CHAR_SIZE = 8000
@@ -43,6 +52,9 @@ DEFAULT_REQUIREMENT_MODEL = "gpt-4o"
 DEFAULT_ADVERSARIAL_MODEL = "gpt-4o"
 DEFAULT_EVALUATION_MODEL = "gpt-4o"
 DEFAULT_TARGET_MODEL = "gpt-5-mini"
+
+
+ENGLISH_OUTPUT_NOTE = "なお、結果は英語で出力してください。"
 
 
 app = FastAPI(title="AIセーフティ評価 自動レッドチーミング")
@@ -63,6 +75,19 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # Session data
 sessions = {}
 
+
+def _ensure_language(language: Optional[str]) -> str:
+    return "en" if language == "en" else "ja"
+
+
+def _append_english_output_note(system_prompt: str, language: Optional[str]) -> str:
+    lang = _ensure_language(language)
+    if lang == "en" and ENGLISH_OUTPUT_NOTE not in system_prompt:
+        separator = "\n" if system_prompt and not system_prompt.endswith("\n") else ""
+        return f"{system_prompt}{separator}{ENGLISH_OUTPUT_NOTE}"
+    return system_prompt
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Display main page"""
@@ -72,6 +97,8 @@ async def index(request: Request):
         "adversarial_base_system_prompt": ADVERSARIAL_BASE_SYSTEM_PROMPT,
         "adversarial_base_user_prompt": ADVERSARIAL_BASE_USER_PROMPT,
         "target_sample_system_prompt": TARGET_SAMPLE_SYSTEM_PROMPT,
+        "target_sample_system_prompt_ja": TARGET_SAMPLE_SYSTEM_PROMPTS["ja"],
+        "target_sample_system_prompt_en": TARGET_SAMPLE_SYSTEM_PROMPTS["en"],
         "default_requirement_model": DEFAULT_REQUIREMENT_MODEL,
         "default_adversarial_model": DEFAULT_ADVERSARIAL_MODEL,
         "default_evaluation_model": DEFAULT_EVALUATION_MODEL,
@@ -129,6 +156,7 @@ async def generate_requirements(request: RequirementsGenerationRequest):
         raise HTTPException(status_code=404, detail="セッションが見つかりません")
     
     session = sessions[request.session_id]
+    language = _ensure_language(getattr(request, "language", "ja"))
     
     # Initialize LLM client by selecting the appropriate client based on the provider
     llm_client = _create_llm_client(session["requirements_llm"])
@@ -153,6 +181,8 @@ async def generate_requirements(request: RequirementsGenerationRequest):
         system_prompt = base_system_prompt + "\n\n追加指示：\n" + custom_prompt
     else:
         system_prompt = base_system_prompt
+
+    system_prompt = _append_english_output_note(system_prompt, language)
     
     # Default user prompt template
     default_user_prompt_template = REQUIREMENT_BASE_USER_PROMPT
@@ -212,7 +242,8 @@ async def generate_adversarial_prompts(request: AdversarialPromptRequest):
         raise HTTPException(status_code=404, detail="セッションが見つかりません")
     
     session = sessions[request.session_id]
-    
+    language = _ensure_language(getattr(request, "language", "ja"))
+
     if not session["requirements"]:
         raise HTTPException(status_code=400, detail="先に要件を生成してください")
     
@@ -235,6 +266,8 @@ async def generate_adversarial_prompts(request: AdversarialPromptRequest):
             system_prompt = base_system_prompt + "\n\n追加指示：\n" + custom_prompt
         else:
             system_prompt = base_system_prompt
+
+        system_prompt = _append_english_output_note(system_prompt, language)
         
         # Generate the specified number of prompts
         prompts_per_requirement = int(request.prompts_per_requirement)
@@ -429,9 +462,10 @@ async def evaluate_target_llm(request: EvaluationRequest):
     """Evaluate target AI"""
     if request.session_id not in sessions:
         raise HTTPException(status_code=404, detail="セッションが見つかりません")
-    
+
     session = sessions[request.session_id]
-    
+    language = _ensure_language(getattr(request, "language", "ja"))
+
     if not session["adversarial_prompts"]:
         raise HTTPException(status_code=400, detail="先に敵対的プロンプトを生成してください")
     
@@ -470,7 +504,12 @@ async def evaluate_target_llm(request: EvaluationRequest):
         logger.info(f"プロンプト {i+1}/{total_prompts} を評価中: {adversarial_prompt[:50]}...")
         
         # Send adversarial prompts to target AI
-        target_response = await target_llm.generate("あなたは役立つAIアシスタントです。", adversarial_prompt)
+        target_system_prompt = session["target_llm"].system_prompt
+        if not target_system_prompt:
+            target_system_prompt = TARGET_SAMPLE_SYSTEM_PROMPTS.get(language, TARGET_SAMPLE_SYSTEM_PROMPTS["ja"])
+        target_system_prompt = _append_english_output_note(target_system_prompt, language)
+
+        target_response = await target_llm.generate(target_system_prompt, adversarial_prompt)
         
         # Preparing system prompts (base prompts + user custom prompts)
         base_system_prompt = EVALUATION_BASE_SYSTEM_PROMPT
@@ -481,6 +520,8 @@ async def evaluate_target_llm(request: EvaluationRequest):
             system_prompt = base_system_prompt + "\n\n追加指示：\n" + custom_prompt
         else:
             system_prompt = base_system_prompt
+
+        system_prompt = _append_english_output_note(system_prompt, language)
         
         user_prompt = EVALUATION_BASE_USER_PROMPT % {"category": prompt_data["category"], "requirement": prompt_data["requirement"], "adversarial": adversarial_prompt, "response": target_response}
         

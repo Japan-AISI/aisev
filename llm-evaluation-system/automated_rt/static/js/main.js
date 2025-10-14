@@ -14,6 +14,91 @@ const progressState = {
     estimatedSeconds: null,
 };
 
+const targetSystemPromptState = {
+    defaults: { ja: null, en: null },
+    isCustom: false,
+};
+
+let targetSystemPromptInitialized = false;
+
+function getCurrentLanguage() {
+    return window.automatedRtI18n?.getLanguage ? window.automatedRtI18n.getLanguage() : 'ja';
+}
+
+function ensureTargetSystemPromptDefaults() {
+    const textarea = document.getElementById('targetLlmSystemPrompt');
+    if (!textarea) {
+        return null;
+    }
+    if (targetSystemPromptState.defaults.ja === null) {
+        targetSystemPromptState.defaults.ja = textarea.dataset.defaultJa || textarea.value || '';
+    }
+    if (targetSystemPromptState.defaults.en === null) {
+        const datasetDefaultEn = textarea.dataset.defaultEn;
+        targetSystemPromptState.defaults.en = datasetDefaultEn !== undefined ? datasetDefaultEn : targetSystemPromptState.defaults.ja;
+    }
+    return textarea;
+}
+
+function isDefaultTargetSystemPrompt(value) {
+    if (value === null || value === undefined) {
+        return false;
+    }
+    const normalized = String(value).replace(/\r\n/g, '\n');
+    const defaultJa = (targetSystemPromptState.defaults.ja ?? '').replace(/\r\n/g, '\n');
+    const defaultEn = (targetSystemPromptState.defaults.en ?? '').replace(/\r\n/g, '\n');
+    return normalized === defaultJa || normalized === defaultEn;
+}
+
+function applyTargetSystemPromptDefault() {
+    const textarea = ensureTargetSystemPromptDefaults();
+    if (!textarea) {
+        return;
+    }
+    if (targetSystemPromptState.isCustom) {
+        return;
+    }
+    const lang = getCurrentLanguage();
+    const defaultValue = targetSystemPromptState.defaults[lang] ?? '';
+    if (textarea.value !== defaultValue) {
+        textarea.value = defaultValue;
+    }
+    targetSystemPromptState.isCustom = false;
+}
+
+function setTargetSystemPromptValue(value) {
+    const textarea = ensureTargetSystemPromptDefaults();
+    if (!textarea || value === undefined) {
+        return;
+    }
+    textarea.value = value ?? '';
+    targetSystemPromptState.isCustom = !isDefaultTargetSystemPrompt(textarea.value);
+    if (!targetSystemPromptState.isCustom) {
+        applyTargetSystemPromptDefault();
+    }
+}
+
+function initializeTargetSystemPromptState() {
+    if (targetSystemPromptInitialized) {
+        return;
+    }
+    const textarea = ensureTargetSystemPromptDefaults();
+    if (!textarea) {
+        return;
+    }
+    targetSystemPromptState.isCustom = !isDefaultTargetSystemPrompt(textarea.value);
+    textarea.addEventListener('input', () => {
+        targetSystemPromptState.isCustom = !isDefaultTargetSystemPrompt(textarea.value);
+    });
+    targetSystemPromptInitialized = true;
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTargetSystemPromptState);
+} else {
+    initializeTargetSystemPromptState();
+}
+
 const messages = {
     ja: {
         language: {
@@ -598,6 +683,7 @@ automatedRtI18n.register({
         renderRequirementsTable,
         renderAdversarialPromptsTable,
         renderEvaluationSummary,
+        applyTargetSystemPromptDefault,
     ]
 });
 
@@ -775,8 +861,18 @@ function applyLlmSettings(settings) {
         document.getElementById('targetLlmModel').value = settings.target_llm.model || '';
         document.getElementById('targetLlmApiKey').value = settings.target_llm.api_key || '';
         document.getElementById('targetLlmApiBase').value = settings.target_llm.api_base || '';
-        document.getElementById('targetLlmSystemPrompt').value = settings.target_llm.system_prompt || '';
-        
+        if (Object.prototype.hasOwnProperty.call(settings.target_llm, 'system_prompt')) {
+            setTargetSystemPromptValue(settings.target_llm.system_prompt ?? '');
+        } else {
+            const textarea = ensureTargetSystemPromptDefaults();
+            if (textarea) {
+                targetSystemPromptState.isCustom = !isDefaultTargetSystemPrompt(textarea.value);
+                if (!targetSystemPromptState.isCustom) {
+                    applyTargetSystemPromptDefault();
+                }
+            }
+        }
+
         // Custom endpoint settings
         if (document.getElementById('targetLlmCustomEndpointUrl')) {
             document.getElementById('targetLlmCustomEndpointUrl').value = settings.target_llm.custom_endpoint_url || '';
@@ -1054,7 +1150,8 @@ async function generateRequirements() {
             session_id: currentSessionId,
             target_purpose: targetPurpose,
             use_documents: document.getElementById('useDocuments').checked,
-            num_requirements: parseInt(document.getElementById('numRequirements').value)
+            num_requirements: parseInt(document.getElementById('numRequirements').value),
+            language: getCurrentLanguage(),
         });
         
         console.log('要件生成レスポンス受信:', response.data);
@@ -1165,7 +1262,8 @@ async function generateAdversarialPrompts() {
         const response = await axios.post('/generate_adversarial_prompts', {
             session_id: currentSessionId,
             target_purpose: document.getElementById('targetPurpose').value,
-            prompts_per_requirement: parseInt(document.getElementById('promptsPerRequirement').value)
+            prompts_per_requirement: parseInt(document.getElementById('promptsPerRequirement').value),
+            language: getCurrentLanguage(),
         });
         
         // Save adversarial prompts
@@ -1287,7 +1385,8 @@ async function runEvaluation() {
         // Call the evaluation execution API
         const response = await axios.post('/evaluate_target_llm', {
             session_id: currentSessionId,
-            auto_run: true // Always execute all by default
+            auto_run: true, // Always execute all by default
+            language: getCurrentLanguage(),
         });
         
         // Monitor progress with polling
