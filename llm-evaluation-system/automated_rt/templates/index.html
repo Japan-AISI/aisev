@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIセーフティ評価 自動レッドチーミング</title>
+    <title data-i18n="page.title">AIセーフティ評価 自動レッドチーミング</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
     <style>
@@ -41,26 +41,32 @@
 </head>
 <body>
     <div class="container mt-4">
-        <h1 class="mb-4 text-center">AIセーフティ評価 自動レッドチーミング</h1>
+        <div class="d-flex justify-content-end mb-3">
+            <div class="btn-group" role="group" aria-label="Language switch">
+                <button type="button" class="btn btn-outline-secondary active" id="langJa" data-lang="ja" data-i18n="language.japanese">日本語</button>
+                <button type="button" class="btn btn-outline-secondary" id="langEn" data-lang="en" data-i18n="language.english">English</button>
+            </div>
+        </div>
+        <h1 class="mb-4 text-center" data-i18n="page.heading">AIセーフティ評価 自動レッドチーミング</h1>
         
         <!-- Current session information -->
         <div class="alert alert-info" id="sessionAlert" style="display: none;">
-            <strong>現在のセッション:</strong> <span id="currentSessionId"></span>
-            <a href="/past_results" class="btn btn-sm btn-primary float-end">過去の評価結果を表示</a>
+            <strong data-i18n="session.current">現在のセッション:</strong> <span id="currentSessionId"></span>
+            <a href="/past_results" class="btn btn-sm btn-primary float-end" data-i18n="session.viewPast">過去の評価結果を表示</a>
         </div>
         
         <!-- Step navigation -->
         <div class="card mb-4" id="stepNavigation" style="display: none;">
             <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">ステップナビゲーション</h5>
+                <h5 class="card-title mb-0" data-i18n="navigation.title">ステップナビゲーション</h5>
             </div>
             <div class="card-body">
                 <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-outline-primary" id="navToStep1" disabled>1. LLM設定</button>
-                    <button type="button" class="btn btn-outline-primary" id="navToStep2" disabled>2. ドキュメント</button>
-                    <button type="button" class="btn btn-outline-primary" id="navToStep3" disabled>3. 要件生成</button>
-                    <button type="button" class="btn btn-outline-primary" id="navToStep4" disabled>4. 敵対的プロンプト</button>
-                    <button type="button" class="btn btn-outline-primary" id="navToStep5" disabled>5. 評価実行</button>
+                    <button type="button" class="btn btn-outline-primary" id="navToStep1" disabled data-i18n="navigation.step1">1. LLM設定</button>
+                    <button type="button" class="btn btn-outline-primary" id="navToStep2" disabled data-i18n="navigation.step2">2. ドキュメント</button>
+                    <button type="button" class="btn btn-outline-primary" id="navToStep3" disabled data-i18n="navigation.step3">3. 要件生成</button>
+                    <button type="button" class="btn btn-outline-primary" id="navToStep4" disabled data-i18n="navigation.step4">4. 敵対的プロンプト</button>
+                    <button type="button" class="btn btn-outline-primary" id="navToStep5" disabled data-i18n="navigation.step5">5. 評価実行</button>
                 </div>
             </div>
         </div>
@@ -69,75 +75,75 @@
         <div class="step-container" id="step1">
             <div class="step-header mb-3">
                 <span class="step-number">1</span>
-                <span class="step-title">LLMの設定</span>
+                <span class="step-title" data-i18n="steps.step1.title">LLMの設定</span>
             </div>
-            <p class="text-muted">評価に使用する各LLMの設定を行います。</p>
-            
+            <p class="text-muted" data-i18n="steps.step1.description">評価に使用する各LLMの設定を行います。</p>
+
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#llmSetupModal">
-                LLM設定モーダルを開く
+                <span data-i18n="steps.step1.openModal">LLM設定モーダルを開く</span>
             </button>
         </div>
-        
+
         <!-- Step 2: Upload documents -->
         <div class="step-container" id="step2" style="display: none;">
             <div class="step-header mb-3">
                 <span class="step-number">2</span>
-                <span class="step-title">ドキュメントのアップロード</span>
+                <span class="step-title" data-i18n="steps.step2.title">ドキュメントのアップロード</span>
             </div>
-            <p class="text-muted">ターゲットAIのドメイン情報を含むドキュメントをアップロードします（オプション）。</p>
-            
+            <p class="text-muted" data-i18n="steps.step2.description">ターゲットAIのドメイン情報を含むドキュメントをアップロードします（オプション）。</p>
+
             <form id="documentUploadForm" enctype="multipart/form-data">
                 <div class="mb-3">
-                    <label for="documentFile" class="form-label">ドキュメントファイル（PDF）:</label>
+                    <label for="documentFile" class="form-label" data-i18n="steps.step2.fileLabel">ドキュメントファイル（PDF）:</label>
                     <input type="file" class="form-control" id="documentFile" name="file" accept=".pdf">
                 </div>
-                <button type="submit" class="btn btn-primary">アップロード</button>
+                <button type="submit" class="btn btn-primary" data-i18n="steps.step2.upload">アップロード</button>
             </form>
-            
+
             <div class="mt-3">
-                <h5>アップロード済みドキュメント:</h5>
+                <h5 data-i18n="steps.step2.uploaded">アップロード済みドキュメント:</h5>
                 <ul id="uploadedDocuments" class="list-group">
                     <!-- A list of uploaded documents will be displayed here -->
                 </ul>
             </div>
-            
-            <button class="btn btn-success mt-3" id="continueToStep3">次のステップへ進む</button>
+
+            <button class="btn btn-success mt-3" id="continueToStep3" data-i18n="steps.next">次のステップへ進む</button>
         </div>
-        
+
         <!-- Step 3: Generate requirements -->
         <div class="step-container" id="step3" style="display: none;">
             <div class="step-header mb-3">
                 <span class="step-number">3</span>
-                <span class="step-title">要件の生成</span>
+                <span class="step-title" data-i18n="steps.step3.title">要件の生成</span>
             </div>
-            <p class="text-muted">ターゲットAIが満たすべき安全要件を生成します。</p>
-            
+            <p class="text-muted" data-i18n="steps.step3.description">ターゲットAIが満たすべき安全要件を生成します。</p>
+
             <form id="requirementsForm">
                 <div class="mb-3">
-                    <label for="targetPurpose" class="form-label">ターゲットAIの使用目的:</label>
-                    <textarea class="form-control" id="targetPurpose" rows="3"></textarea>
-                    <small class="text-muted">例: このLLMは顧客サポートチャットボットとして使用され、製品情報の提供や一般的な質問に回答します。</small>
+                    <label for="targetPurpose" class="form-label" data-i18n="steps.step3.purposeLabel">ターゲットAIの使用目的:</label>
+                    <textarea class="form-control" id="targetPurpose" rows="3" data-i18n-placeholder="steps.step3.purposePlaceholder"></textarea>
+                    <small class="text-muted" data-i18n="steps.step3.purposeExample">例: このLLMは顧客サポートチャットボットとして使用され、製品情報の提供や一般的な質問に回答します。</small>
                 </div>
                 <div class="mb-3">
-                    <label for="numRequirements" class="form-label">生成する要件の数:</label>
+                    <label for="numRequirements" class="form-label" data-i18n="steps.step3.countLabel">生成する要件の数:</label>
                     <input type="number" class="form-control" id="numRequirements" min="1" max="100" value="10">
                 </div>
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="useDocuments" checked>
-                    <label class="form-check-label" for="useDocuments">アップロードしたドキュメントを使用する</label>
+                    <label class="form-check-label" for="useDocuments" data-i18n="steps.step3.useDocuments">アップロードしたドキュメントを使用する</label>
                 </div>
-                <button type="submit" class="btn btn-primary">要件を生成</button>
+                <button type="submit" class="btn btn-primary" data-i18n="steps.step3.generate">要件を生成</button>
             </form>
-            
+
             <div class="mt-3" id="requirementsResult" style="display: none;">
-                <h5>生成された要件:</h5>
+                <h5 data-i18n="steps.step3.generatedTitle">生成された要件:</h5>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>カテゴリ</th>
-                                <th>要件</th>
-                                <th>理由</th>
+                                <th data-i18n="tables.requirements.category">カテゴリ</th>
+                                <th data-i18n="tables.requirements.requirement">要件</th>
+                                <th data-i18n="tables.requirements.reason">理由</th>
                             </tr>
                         </thead>
                         <tbody id="requirementsTable">
@@ -145,35 +151,35 @@
                         </tbody>
                     </table>
                 </div>
-                <button class="btn btn-success mt-3" id="continueToStep4">次のステップへ進む</button>
+                <button class="btn btn-success mt-3" id="continueToStep4" data-i18n="steps.next">次のステップへ進む</button>
             </div>
         </div>
-        
+
         <!-- Step 4: Generate adversarial prompts -->
         <div class="step-container" id="step4" style="display: none;">
             <div class="step-header mb-3">
                 <span class="step-number">4</span>
-                <span class="step-title">敵対的プロンプトの生成</span>
+                <span class="step-title" data-i18n="steps.step4.title">敵対的プロンプトの生成</span>
             </div>
-            <p class="text-muted">各要件に対する敵対的プロンプトを生成します。</p>
-            
+            <p class="text-muted" data-i18n="steps.step4.description">各要件に対する敵対的プロンプトを生成します。</p>
+
             <form id="adversarialPromptForm">
                 <div class="mb-3">
-                    <label for="promptsPerRequirement" class="form-label">要件ごとに生成するプロンプト数:</label>
+                    <label for="promptsPerRequirement" class="form-label" data-i18n="steps.step4.countLabel">要件ごとに生成するプロンプト数:</label>
                     <input type="number" class="form-control" id="promptsPerRequirement" min="1" max="10" value="3">
                 </div>
-                <button type="submit" class="btn btn-primary">敵対的プロンプトを生成</button>
+                <button type="submit" class="btn btn-primary" data-i18n="steps.step4.generate">敵対的プロンプトを生成</button>
             </form>
-            
+
             <div class="mt-3" id="adversarialPromptsResult" style="display: none;">
-                <h5>生成された敵対的プロンプト:</h5>
+                <h5 data-i18n="steps.step4.generatedTitle">生成された敵対的プロンプト:</h5>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>カテゴリ</th>
-                                <th>要件</th>
-                                <th>敵対的プロンプト</th>
+                                <th data-i18n="tables.adversarial.category">カテゴリ</th>
+                                <th data-i18n="tables.adversarial.requirement">要件</th>
+                                <th data-i18n="tables.adversarial.prompt">敵対的プロンプト</th>
                             </tr>
                         </thead>
                         <tbody id="adversarialPromptsTable">
@@ -181,48 +187,48 @@
                         </tbody>
                     </table>
                 </div>
-                <button class="btn btn-outline-secondary mt-3 me-2" id="exportAdversarialPrompts">生成結果をエクスポート</button>
-                <button class="btn btn-success mt-3" id="continueToStep5">次のステップへ進む</button>
+                <button class="btn btn-outline-secondary mt-3 me-2" id="exportAdversarialPrompts" data-i18n="steps.step4.export">生成結果をエクスポート</button>
+                <button class="btn btn-success mt-3" id="continueToStep5" data-i18n="steps.next">次のステップへ進む</button>
             </div>
         </div>
-        
+
         <!-- Step 5: Execute evaluation -->
         <div class="step-container" id="step5" style="display: none;">
             <div class="step-header mb-3">
                 <span class="step-number">5</span>
-                <span class="step-title">評価の実行</span>
+                <span class="step-title" data-i18n="steps.step5.title">評価の実行</span>
             </div>
-            <p class="text-muted">ターゲットAIに対して敵対的プロンプトを実行し、応答を評価します。</p>
-            
+            <p class="text-muted" data-i18n="steps.step5.description">ターゲットAIに対して敵対的プロンプトを実行し、応答を評価します。</p>
+
             <form id="evaluationForm">
-                <button type="submit" class="btn btn-danger">評価を実行</button>
+                <button type="submit" class="btn btn-danger" data-i18n="steps.step5.run">評価を実行</button>
             </form>
             
             <div class="mt-3" id="evaluationProgress" style="display: none;">
                 <div class="progress mb-2">
                     <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
                 </div>
-                <p class="text-center">進捗状況: <span id="completedPrompts">0</span> / <span id="totalPrompts">0</span> プロンプト完了</p>
+                <p class="text-center" data-i18n-progress="evaluation.progress">進捗状況: <span id="completedPrompts">0</span> / <span id="totalPrompts">0</span> プロンプト完了</p>
                 <p class="text-center" id="estimatedTimeRemaining"></p>
             </div>
-            
+
             <div class="mt-3" id="evaluationResult" style="display: none;">
                 <div class="alert alert-success">
-                    <h5>評価サマリー:</h5>
-                    <p>総テスト数: <span id="totalTests">0</span></p>
-                    <p>合格: <span id="passedTests">0</span> (<span id="passRate">0%</span>)</p>
-                    <p>不合格: <span id="failedTests">0</span></p>
-                    <p>エラー: <span id="errorTests">0</span></p>
+                    <h5 data-i18n="evaluation.summary">評価サマリー:</h5>
+                    <p><span data-i18n="evaluation.totalLabel">総テスト数:</span> <span id="totalTests">0</span></p>
+                    <p><span data-i18n="evaluation.passedLabel">合格:</span> <span id="passedTests">0</span> (<span id="passRate">0%</span>)</p>
+                    <p><span data-i18n="evaluation.failedLabel">不合格:</span> <span id="failedTests">0</span></p>
+                    <p><span data-i18n="evaluation.errorLabel">エラー:</span> <span id="errorTests">0</span></p>
                 </div>
-                
+
                 <div class="mt-3">
-                    <h5>カテゴリ別結果:</h5>
+                    <h5 data-i18n="evaluation.categoryResults">カテゴリ別結果:</h5>
                     <div id="categoryStats">
                         <!-- Category statistics are displayed here -->
                     </div>
                 </div>
-                
-                <button class="btn btn-primary mt-3" id="viewDetailedResults">詳細結果を表示</button>
+
+                <button class="btn btn-primary mt-3" id="viewDetailedResults" data-i18n="evaluation.viewDetails">詳細結果を表示</button>
             </div>
         </div>
         
@@ -592,15 +598,26 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="/static/js/i18n.js"></script>
     <script src="/static/js/main.js"></script>
     <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-lang]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            automatedRtI18n.setLanguage(button.dataset.lang);
+        });
+    });
+
     // Automatically load settings saved when the page is loaded
     if (localStorage.getItem('llmSettings')) {
         try {
             const settings = JSON.parse(localStorage.getItem('llmSettings'));
             applyLlmSettings(settings);
-            showToast('情報', '保存済みの設定を読み込みました', 'info');
+            showToast(
+                automatedRtI18n.t('toast.info'),
+                automatedRtI18n.t('alerts.settingsLoaded'),
+                'info'
+            );
         } catch (error) {
             console.error('設定の自動読み込みエラー:', error);
         }
