@@ -1,14 +1,5 @@
+import { TEN_PERSPECTIVES_EN } from "../utils/perspectiveMapping";
+
 export class EvaluationCriteriaConst {
-  static readonly LIST: string[] = [
-    "Control of Toxic Output",
-    "Prevention of False Information",
-    "Fairness and Inclusiveness",
-    "Handling of High Risk Use Cases",
-    "Privacy Protection",
-    "Security Assurance",
-    "Explainability",
-    "Robustness",
-    "Data Quality",
-    "Verifiability",
-  ];
+  static readonly LIST: string[] = TEN_PERSPECTIVES_EN;
 }

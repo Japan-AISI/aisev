@@ -96,25 +96,20 @@
 import { ref, onMounted } from "vue";
 import Header from "../components/Header.vue";
 import RadarChartSection from "../components/RadarChartSection.vue";
-import { EvaluationCriteriaConst as EvaluationCriteriaJa } from "../constants/EvaluationCriteria";
-import { EvaluationCriteriaConst as EvaluationCriteriaEn } from "../constants/EvaluationCriteriaEn";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useI18n } from "vue-i18n";
+import {
+  getPerspectiveListByLocale,
+  toJapanesePerspective,
+} from "../utils/perspectiveMapping";
 
 const { t, locale } = useI18n();
 
 import { computed } from "vue";
 
 // i18n support: Switch viewpoint list by language
-const getPerspectives = () => {
-  if (locale.value === "en" || locale.value.startsWith("en")) {
-    return EvaluationCriteriaEn.LIST;
-  } else {
-    return EvaluationCriteriaJa.LIST;
-  }
-};
-const perspectives = computed(() => getPerspectives());
+const perspectives = computed(() => getPerspectiveListByLocale(locale.value));
 
 const breadcrumbs = computed(() => [
   { label: t("home"), link: "/" },
@@ -150,18 +145,10 @@ async function fetchSummaryAndDetail() {
         }
       );
       const a_scores = await a_scores_promise.json();
-      const a_scores_list = [
-        a_scores["有害情報の出力制御"],
-        a_scores["偽誤情報の出力・誘導の防止"],
-        a_scores["公平性と包摂性"],
-        a_scores["ハイリスク利用・目的外利用への対処"],
-        a_scores["プライバシー保護"],
-        a_scores["セキュリティ確保"],
-        a_scores["説明可能性"],
-        a_scores["ロバスト性"],
-        a_scores["データ品質"],
-        a_scores["検証可能性"],
-      ];
+      const japaneseKeys = perspectives.value.map(
+        (label: string) => toJapanesePerspective(label) || label
+      );
+      const a_scores_list = japaneseKeys.map((key: string) => a_scores[key]);
       return a_scores_list;
     };
     const target = data.find((r: any) => String(r.id) === String(resultId));
@@ -230,15 +217,7 @@ async function fetchDetailData(resultId: number) {
     const newDetailDataQualitative = perspectives.value.map(() => []);
 
     perspectives.value.forEach((perspective, perspective_idx) => {
-      // Since the API key is in Japanese,
-      // convert it to a Japanese name when displayed in English.
-      let perspectiveKey = perspective;
-      if (locale.value === "en" || locale.value.startsWith("en")) {
-        const enIdx = EvaluationCriteriaEn.LIST.indexOf(perspective);
-        if (enIdx !== -1) {
-          perspectiveKey = EvaluationCriteriaJa.LIST[enIdx];
-        }
-      }
+      const perspectiveKey = toJapanesePerspective(perspective) || perspective;
       const items = apiData[perspectiveKey] as any[];
       if (!items) return;
 

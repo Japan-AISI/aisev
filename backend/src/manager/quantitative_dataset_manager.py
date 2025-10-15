@@ -4,6 +4,7 @@ import pickle
 import math
 import json
 from src.utils.logger import logger
+from src.constants.perspectives import to_japanese_perspective
 
 
 def _convert_nan_to_json_compatible(obj):
@@ -36,13 +37,14 @@ class QuantitativeDatasetService:
         added_datasets = []
         try:
             binary_content = pickle.dumps(data.get("contents", []))
+            criterion_name = to_japanese_perspective(data.get("criterion"))
             perspective = db.query(EvaluationPerspective).filter_by(
-                perspective_name=data.get("criterion")).first()
+                perspective_name=criterion_name).first()
             if not perspective and not data.get("gsn_leaf"):
                 logger.error(
-                    f"add_from_json: EvaluationPerspectiveが見つかりません: {data.get('criterion')}")
+                    f"add_from_json: EvaluationPerspectiveが見つかりません: {criterion_name}")
                 raise ValueError(
-                    f"EvaluationPerspective with name {data.get('criterion')} not found"
+                    f"EvaluationPerspective with name {criterion_name} not found"
                 )
             dataset = Dataset(
                 name=f"{data.get('name', '')}",

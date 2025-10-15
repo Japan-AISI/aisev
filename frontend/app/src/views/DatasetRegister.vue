@@ -75,12 +75,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Header from "../components/Header.vue";
-import { EvaluationCriteriaConst as EvaluationCriteriaJa } from "../constants/EvaluationCriteria";
-import { EvaluationCriteriaConst as EvaluationCriteriaEn } from "../constants/EvaluationCriteriaEn";
 import Papa from "papaparse";
+import {
+  getPerspectiveListByLocale,
+  toEnglishPerspective,
+  toJapanesePerspective,
+} from "../utils/perspectiveMapping";
 
 const { t, locale } = useI18n();
 
@@ -90,18 +93,22 @@ const breadcrumbs = [
   { label: "datasetRegister" },
 ];
 // i18n support: Switch viewpoint list by language
-const getAspects = () => {
-  if (locale.value === "en" || locale.value.startsWith("en")) {
-    return EvaluationCriteriaEn.LIST;
-  } else {
-    return EvaluationCriteriaJa.LIST;
-  }
-};
-const aspects = computed(() => getAspects());
+const aspects = computed(() => getPerspectiveListByLocale(locale.value));
 const datasetName = ref("");
 const inputAspect = ref(false);
 const acPresetType = ref("");
 const selectedAspect = ref("");
+watch(
+  () => locale.value,
+  (newLocale, oldLocale) => {
+    if (!selectedAspect.value) return;
+    if (newLocale.startsWith("en")) {
+      selectedAspect.value = toEnglishPerspective(selectedAspect.value);
+    } else {
+      selectedAspect.value = toJapanesePerspective(selectedAspect.value);
+    }
+  }
+);
 const file = ref<File | null>(null);
 const uploadResult = ref("");
 const acPresetEnable = ref(false);
@@ -217,15 +224,8 @@ async function handleSubmit() {
   if (inputAspect.value && selectedAspect.value && !existTenPerspective) {
     console.log("Adding aspect to each row:", selectedAspect.value);
 
-    // Convert selected aspect to Japanese for backend compatibility
-    let japaneseAspect = selectedAspect.value;
-    if (locale.value === "en" || locale.value.startsWith("en")) {
-      // Find the corresponding Japanese aspect
-      const enIndex = EvaluationCriteriaEn.LIST.indexOf(selectedAspect.value);
-      if (enIndex !== -1) {
-        japaneseAspect = EvaluationCriteriaJa.LIST[enIndex];
-      }
-    }
+    const japaneseAspect =
+      toJapanesePerspective(selectedAspect.value) || selectedAspect.value;
 
     mergedData = mergedData.map((row: any) => ({
       ...row,
@@ -267,6 +267,21 @@ async function handleSubmit() {
     });
   }
 
+  // Normalize ten_perspective column values to Japanese labels
+  mergedData = mergedData.map((row: any) => {
+    if (
+      typeof row.ten_perspective === "string" &&
+      row.ten_perspective.trim() !== ""
+    ) {
+      return {
+        ...row,
+        ten_perspective: toJapanesePerspective(row.ten_perspective) ||
+          row.ten_perspective,
+      };
+    }
+    return row;
+  });
+
   // Send merged data to API
   const mergedCsv = Papa.unparse(mergedData);
   const mergedBlob = new Blob([mergedCsv], { type: "text/csv" });
@@ -280,7 +295,10 @@ async function handleSubmit() {
   formData.append("file", mergedFile);
   formData.append("datasetName", datasetName.value);
   if (inputAspect.value) {
-    formData.append("aspect", selectedAspect.value);
+    formData.append(
+      "aspect",
+      toJapanesePerspective(selectedAspect.value) || selectedAspect.value
+    );
   }
 
   // API Destination Branching

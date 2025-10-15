@@ -154,12 +154,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Header from "../components/Header.vue";
-import { EvaluationCriteriaConst } from "../constants/EvaluationCriteria";
+import {
+  getPerspectiveListByLocale,
+  toEnglishPerspective,
+  toJapanesePerspective,
+} from "../utils/perspectiveMapping";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 // Breadcrumbs
 const breadcrumbs = [
@@ -169,7 +173,7 @@ const breadcrumbs = [
 ];
 
 // standard evaluation criteria
-const criteria = ref(EvaluationCriteriaConst.LIST);
+const criteria = computed(() => getPerspectiveListByLocale(locale.value));
 const models = ref<any[]>([]);
 const selectedTargetAI = ref(models.value[0]?.id || null);
 const selectedJudgeAI = ref(models.value[1]?.id || null);
@@ -306,12 +310,15 @@ function goToOutput() {
     const esc = (v: string) =>
       '"' + (v || "").replace(/"/g, '""').replace(/\n/g, " ") + '"';
     const accuracyStr = `${item.paraphraseCorrect}/${item.paraphraseTotal}`;
+    const perspectiveForCsv = locale.value.startsWith("en")
+      ? toEnglishPerspective(item.criterion) || item.criterion
+      : toJapanesePerspective(item.criterion) || item.criterion;
     csvRows.push(
       [
         idx + 1,
         esc(item.question),
         esc(item.expectedAnswer),
-        esc(item.criterion),
+        esc(perspectiveForCsv as string),
       ].join(",")
     );
   });
@@ -331,6 +338,20 @@ function goToOutput() {
 onMounted(() => {
   fetchModels();
 });
+
+watch(
+  () => locale.value,
+  (newLocale) => {
+    questions.value = questions.value.map((item) => ({
+      ...item,
+      criterion: newLocale.startsWith("en")
+        ? toEnglishPerspective(item.criterion)
+        : toJapanesePerspective(item.criterion),
+    }));
+  }
+);
+
+// No per-item default selection is required, so no additional watcher needed.
 </script>
 
 <style scoped>

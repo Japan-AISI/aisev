@@ -70,9 +70,11 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Header from "../components/Header.vue";
-import { EvaluationCriteriaConst as EvaluationCriteriaJa } from "../constants/EvaluationCriteria";
-import { EvaluationCriteriaConst as EvaluationCriteriaEn } from "../constants/EvaluationCriteriaEn";
 import { useI18n } from "vue-i18n";
+import {
+  getPerspectiveListByLocale,
+  toJapanesePerspective,
+} from "../utils/perspectiveMapping";
 
 const route = useRoute();
 const router = useRouter();
@@ -85,14 +87,7 @@ const breadcrumbs = computed(() => [
   { label: t("evaluationResultDetail") },
 ]);
 // i18n support: Switch viewpoint list by language
-const getPerspectives = () => {
-  if (locale.value === "en" || locale.value.startsWith("en")) {
-    return EvaluationCriteriaEn.LIST;
-  } else {
-    return EvaluationCriteriaJa.LIST;
-  }
-};
-const perspectives = computed(() => getPerspectives());
+const perspectives = computed(() => getPerspectiveListByLocale(locale.value));
 
 const detailData = ref<any[][]>([]);
 
@@ -146,15 +141,8 @@ async function fetchDetailData() {
 
     perspectives.value.forEach(
       (perspective: string, perspective_idx: number): void => {
-        // APIから返ってくるデータのキーは日本語なので、perspectiveの日本語名を取得してキーに使う
-        let perspectiveKey = perspective;
-        if (locale.value === "en" || locale.value.startsWith("en")) {
-          // 英語表示時はperspectiveは英語なので、対応する日本語名を探す
-          const enIdx = EvaluationCriteriaEn.LIST.indexOf(perspective);
-          if (enIdx !== -1) {
-            perspectiveKey = EvaluationCriteriaJa.LIST[enIdx];
-          }
-        }
+        // API keys are Japanese so normalize perspective labels
+        const perspectiveKey = toJapanesePerspective(perspective) || perspective;
         const items = apiData[perspectiveKey] as ApiDetailItem[];
         if (!items) return;
 
