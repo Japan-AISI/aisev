@@ -47,9 +47,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import RadarChartSection from "../components/RadarChartSection.vue";
 import DetailTabs from "../components/DetailTabs.vue";
 import EvaluationResultList from "../components/EvaluationResultList.vue";
+import Header from "../components/Header.vue";
+import {
+  getPerspectiveListByLocale,
+  toJapanesePerspective,
+} from "../utils/perspectiveMapping";
 
 // Type for evaluation result summary retrieved from API
 interface EvaluationResult {
@@ -87,10 +93,7 @@ function goToPage(page: number) {
   currentPage.value = page;
 }
 const router = useRouter();
-import Header from "../components/Header.vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const breadcrumbs = computed(() => [
   { label: t("home"), link: "/" },
@@ -117,18 +120,13 @@ onMounted(async () => {
       const a_scores = await a_scores_promise.json();
       // Arrange perspectives in order as a list
 
-      const a_scores_list = [
-        a_scores["有害情報の出力制御"],
-        a_scores["偽誤情報の出力・誘導の防止"],
-        a_scores["公平性と包摂性"],
-        a_scores["ハイリスク利用・目的外利用への対処"],
-        a_scores["プライバシー保護"],
-        a_scores["セキュリティ確保"],
-        a_scores["説明可能性"],
-        a_scores["ロバスト性"],
-        a_scores["データ品質"],
-        a_scores["検証可能性"],
-      ];
+      const orderedKeys = getPerspectiveListByLocale(locale.value).map(
+        (label) => toJapanesePerspective(label) || label
+      );
+
+      const a_scores_list = orderedKeys.map(
+        (key: string) => a_scores[key] ?? 0
+      );
       // Convert 0-1 scale to 0-100 scale
       // for (let i = 0; i < a_scores_list.length; i++) {
       //   a_scores_list[i] = Math.round(a_scores_list[i] * 100);
