@@ -650,16 +650,6 @@ function formatDuration(seconds) {
     return automatedRtI18n.t('misc.seconds', { value: rounded });
 }
 
-function updateProgressLabel() {
-    return;
-    //const progressLabel = document.querySelector('[data-i18n-progress]');
-    //if (!progressLabel) return;
-    //progressLabel.textContent = automatedRtI18n.t('evaluation.progress', {
-    //    completed: progressState.completed,
-    //    total: progressState.total,
-    //});
-}
-
 function updateEstimatedTime() {
     const estimatedTimeElement = document.getElementById('estimatedTimeRemaining');
     if (!estimatedTimeElement) return;
@@ -680,7 +670,6 @@ automatedRtI18n.register({
     textMap,
     attributes,
     onLanguageChange: [
-        updateProgressLabel,
         updateEstimatedTime,
         renderUploadedDocuments,
         renderRequirementsTable,
@@ -1032,7 +1021,6 @@ async function saveLlmSetup() {
         renderRequirementsTable();
         renderAdversarialPromptsTable();
         renderEvaluationSummary();
-        updateProgressLabel();
         updateEstimatedTime();
 
         const progressBar = document.querySelector('#evaluationProgress .progress-bar');
@@ -1377,7 +1365,6 @@ async function runEvaluation() {
     progressState.total = adversarialPrompts.length;
     progressState.completed = 0;
     progressState.estimatedSeconds = null;
-    updateProgressLabel();
     updateEstimatedTime();
     
     // Start time measurement
@@ -1409,7 +1396,6 @@ async function runEvaluation() {
                 completedPromptsElement.textContent = completed;
                 progressState.completed = completed;
                 progressState.total = total;
-                updateProgressLabel();
 
                 // Estimate remaining time
                 if (completed > 0 && total > 0) {
@@ -1431,7 +1417,6 @@ async function runEvaluation() {
                     // Display results when evaluation is complete
                     progressState.completed = total;
                     progressState.estimatedSeconds = 0;
-                    updateProgressLabel();
                     updateEstimatedTime();
                     showEvaluationResults(response.data);
                 }
