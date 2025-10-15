@@ -176,7 +176,8 @@ const messages = {
             summary: "評価サマリー:",
             categoryResults: "カテゴリ別結果:",
             viewDetails: "詳細結果を表示",
-            progress: "進捗状況: {{completed}} / {{total}} プロンプト完了",
+            progress_head: "進捗状況: ",
+            progress_tail: " プロンプト完了",
             estimatedTime: "推定残り時間: {{time}}",
             completed: "プロンプト完了",
             totalLabel: "総テスト数:",
@@ -319,7 +320,8 @@ const messages = {
             summary: "Evaluation summary:",
             categoryResults: "Results by category:",
             viewDetails: "View detailed results",
-            progress: "Progress: {{completed}} / {{total}} prompts completed",
+            progress_head: "Progress: ",
+            progress_tail: " prompts completed",
             estimatedTime: "Estimated remaining time: {{time}}",
             completed: "Prompts completed",
             totalLabel: "Total tests:",
@@ -649,12 +651,13 @@ function formatDuration(seconds) {
 }
 
 function updateProgressLabel() {
-    const progressLabel = document.querySelector('[data-i18n-progress]');
-    if (!progressLabel) return;
-    progressLabel.textContent = automatedRtI18n.t('evaluation.progress', {
-        completed: progressState.completed,
-        total: progressState.total,
-    });
+    return;
+    //const progressLabel = document.querySelector('[data-i18n-progress]');
+    //if (!progressLabel) return;
+    //progressLabel.textContent = automatedRtI18n.t('evaluation.progress', {
+    //    completed: progressState.completed,
+    //    total: progressState.total,
+    //});
 }
 
 function updateEstimatedTime() {
