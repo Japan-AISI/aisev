@@ -10,7 +10,7 @@ TEN_PERSPECTIVES = [
         "en": "Prevention of Misinformation, Disinformation and Manipulation",
     },
     {"ja": "公平性と包摂性", "en": "Fairness and Inclusion"},
-    {"ja": "ハイリスク利用・目的外利用への対処", "en": "Addressing High-risk Use and Unintended Us"},
+    {"ja": "ハイリスク利用・目的外利用への対処", "en": "Addressing High-risk Use and Unintended Use"},
     {"ja": "プライバシー保護", "en": "Privacy Protection"},
     {"ja": "セキュリティ確保", "en": "Ensuring Security"},
     {"ja": "説明可能性", "en": "Explainability"},
