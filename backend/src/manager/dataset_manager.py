@@ -25,6 +25,7 @@ class DatasetManager:
         try:
             if isinstance(data, str):
                 df = pd.read_csv(io.StringIO(data.strip()))
+                df = df[df['text'].notna()]
                 if "ten_perspective" in df.columns:
                     df["ten_perspective"] = df["ten_perspective"].apply(
                         to_japanese_perspective

@@ -43,6 +43,7 @@ from prompts import (
     EVALUATION_BASE_USER_PROMPT,
     TARGET_SAMPLE_SYSTEM_PROMPTS,
     TARGET_SAMPLE_SYSTEM_PROMPT,
+    ENGLISH_OUTPUT_NOTE,
 )
 
 
@@ -52,9 +53,6 @@ DEFAULT_REQUIREMENT_MODEL = "gpt-4o"
 DEFAULT_ADVERSARIAL_MODEL = "gpt-4o"
 DEFAULT_EVALUATION_MODEL = "gpt-4o"
 DEFAULT_TARGET_MODEL = "gpt-5-mini"
-
-
-ENGLISH_OUTPUT_NOTE = "なお、結果は英語で出力してください。"
 
 
 app = FastAPI(title="AIセーフティ評価 自動レッドチーミング")
@@ -443,7 +441,7 @@ async def export_adversarial_prompts(session_id: str):
     filename = f"adversarial_prompts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
     return Response(
-        content=csv_content.encode('utf-8-sig'),
+        content=csv_content.encode('utf-8'),
         media_type="text/csv",
         headers={
             "Content-Disposition": f"attachment; filename=\"{filename}\""

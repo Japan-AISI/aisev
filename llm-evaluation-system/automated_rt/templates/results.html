@@ -157,7 +157,7 @@
             <div class="card-body">
                 <div class="btn-group mb-3" role="group" id="categoryFilters">
                     <button type="button" class="btn btn-outline-primary active" data-category="all" data-i18n="filters.all">全て</button>
-                    <button type="button" class="btn btn-outline-primary" data-category="有害情報の出力制御" data-i18n="filters.harmful">有害情報の出力制御</button>
+                    <button type="button" class="btn btn-outline-primary" data-category="有害情報の出力制御" data-i18n="filters.toxic">有害情報の出力制御</button>
                     <button type="button" class="btn btn-outline-primary" data-category="偽誤情報の出力・誘導の防止" data-i18n="filters.misinformation">偽誤情報の出力・誘導の防止</button>
                     <button type="button" class="btn btn-outline-primary" data-category="公平性と包摂性" data-i18n="filters.fairness">公平性と包摂性</button>
                     <button type="button" class="btn btn-outline-primary" data-category="ハイリスク利用・目的外利用への対処" data-i18n="filters.highRisk">ハイリスク利用・目的外利用への対処</button>
@@ -247,7 +247,7 @@
                 filters: {
                     categoryHeading: "カテゴリフィルター",
                     all: "全て",
-                    harmful: "有害情報の出力制御",
+                    toxic: "有害情報の出力制御",
                     misinformation: "偽誤情報の出力・誘導の防止",
                     fairness: "公平性と包摂性",
                     highRisk: "ハイリスク利用・目的外利用への対処",
@@ -294,10 +294,10 @@
                 filters: {
                     categoryHeading: "Category Filters",
                     all: "All",
-                    harmful: "Control of Harmful Outputs",
-                    misinformation: "Prevent Misinformation",
-                    fairness: "Fairness and Inclusiveness",
-                    highRisk: "High-Risk & Misuse Mitigation",
+                    toxic: "Control of Toxic Output",
+                    misinformation: "Prevention of Misinformation, Disinformation and Manipulation",
+                    fairness: "Fairness and Inclusion",
+                    highRisk: "Addressing High-risk Use and Unintended Use",
                     privacy: "Privacy Protection",
                     allStatuses: "All Statuses",
                     statusPassed: "Passed",
@@ -320,10 +320,10 @@
         };
 
         const resultsTextMap = {
-            "有害情報の出力制御": { ja: "有害情報の出力制御", en: "Control of Harmful Outputs" },
-            "偽誤情報の出力・誘導の防止": { ja: "偽誤情報の出力・誘導の防止", en: "Prevent Misinformation" },
-            "公平性と包摂性": { ja: "公平性と包摂性", en: "Fairness and Inclusiveness" },
-            "ハイリスク利用・目的外利用への対処": { ja: "ハイリスク利用・目的外利用への対処", en: "High-Risk & Misuse Mitigation" },
+            "有害情報の出力制御": { ja: "有害情報の出力制御", en: "Control of Toxic Output" },
+            "偽誤情報の出力・誘導の防止": { ja: "偽誤情報の出力・誘導の防止", en: "Prevention of Misinformation, Disinformation and Manipulation" },
+            "公平性と包摂性": { ja: "公平性と包摂性", en: "Fairness and Inclusion" },
+            "ハイリスク利用・目的外利用への対処": { ja: "ハイリスク利用・目的外利用への対処", en: "Addressing High-risk Use and Unintended Use" },
             "プライバシー保護": { ja: "プライバシー保護", en: "Privacy Protection" }
         };
 
@@ -375,15 +375,16 @@
             });
             
             function filterResults() {
-                const selectedCategory = document.querySelector('#categoryFilters button.active').getAttribute('data-category');
+                //const selectedCategory = document.querySelector('#categoryFilters button.active').getAttribute('data-category');
+                const selectedCategory = document.querySelector('#categoryFilters button.active').innerText;
                 const selectedStatus = document.querySelector('#statusFilters button.active').getAttribute('data-status');
-                
+
                 const resultCards = document.querySelectorAll('.result-card');
                 resultCards.forEach(card => {
                     const cardCategory = card.getAttribute('data-category');
                     const cardStatus = card.getAttribute('data-status');
                     
-                    const categoryMatch = selectedCategory === 'all' || cardCategory === selectedCategory;
+                    const categoryMatch = selectedCategory === '全て' || selectedCategory === 'All' || cardCategory === selectedCategory;
                     const statusMatch = selectedStatus === 'all' || cardStatus === selectedStatus;
                     
                     if (categoryMatch && statusMatch) {

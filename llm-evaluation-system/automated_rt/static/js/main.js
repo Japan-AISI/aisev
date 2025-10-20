@@ -1124,8 +1124,6 @@ async function generateRequirements() {
     var targetPurpose = document.getElementById('targetPurpose').value;
     if (!targetPurpose) {
         targetPurpose = " ";
-        //showToast('警告', 'ターゲットAIの使用目的を入力してください', 'warning');
-        //return;
     }
     
     // Display while generation
