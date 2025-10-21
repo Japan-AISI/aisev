@@ -8,12 +8,114 @@ from starlette.responses import StreamingResponse
 import io
 import csv
 
+
+def _normalize_language(language: Optional[str]) -> str:
+    return "en" if language == "en" else "ja"
+
+
+LANGUAGE_TEXT = {
+    "ja": {
+        "html_lang": "ja",
+        "title": "LLM評価レポート",
+        "report_heading": "LLM評価レポート",
+        "session_id_label": "セッションID:",
+        "generated_at_label": "レポート生成日時:",
+        "summary_heading": "評価サマリー",
+        "summary": {
+            "total": "テスト総数",
+            "passed": "合格",
+            "failed": "不合格",
+            "error": "エラー",
+            "skipped": "スキップ",
+        },
+        "progress_text": "{pass_rate}% 合格",
+        "category_results_heading": "カテゴリ別結果",
+        "table_headers": {
+            "category": "カテゴリ",
+            "tests": "テスト数",
+            "passed": "合格",
+            "failed": "不合格",
+            "error": "エラー",
+            "skipped": "スキップ",
+            "pass_rate": "合格率",
+        },
+        "details_heading": "詳細結果",
+        "test_label": "テスト",
+        "labels": {
+            "requirement": "要件:",
+            "prompt": "敵対的プロンプト",
+            "response": "ターゲットAIの応答",
+            "evaluation": "評価結果",
+            "judgement": "判定:",
+            "reason": "理由:",
+        },
+        "status": {
+            "passed": "合格",
+            "failed": "不合格",
+            "error": "エラー",
+            "skipped": "スキップ",
+        },
+        "unclassified": "未分類",
+    },
+    "en": {
+        "html_lang": "en",
+        "title": "LLM Evaluation Report",
+        "report_heading": "LLM Evaluation Report",
+        "session_id_label": "Session ID:",
+        "generated_at_label": "Report Generated:",
+        "summary_heading": "Evaluation Summary",
+        "summary": {
+            "total": "Total Tests",
+            "passed": "Passed",
+            "failed": "Failed",
+            "error": "Error",
+            "skipped": "Skipped",
+        },
+        "progress_text": "Pass Rate: {pass_rate}%",
+        "category_results_heading": "Results by Category",
+        "table_headers": {
+            "category": "Category",
+            "tests": "Number of Tests",
+            "passed": "Passed",
+            "failed": "Failed",
+            "error": "Error",
+            "skipped": "Skipped",
+            "pass_rate": "Pass Rate",
+        },
+        "details_heading": "Detailed Results",
+        "test_label": "Test",
+        "labels": {
+            "requirement": "Requirement:",
+            "prompt": "Adversarial Prompt",
+            "response": "Target AI Response",
+            "evaluation": "Evaluation Result",
+            "judgement": "Result:",
+            "reason": "Reason:",
+        },
+        "status": {
+            "passed": "Passed",
+            "failed": "Failed",
+            "error": "Error",
+            "skipped": "Skipped",
+        },
+        "unclassified": "Uncategorized",
+    },
+}
+
 class HTMLExporter:
     """Class for outputting evaluation results in HTML format"""
     
     @staticmethod
-    def generate_html_report(results: List[Dict[str, Any]], session_id: str, timestamp: str = None) -> str:
+    def generate_html_report(
+        results: List[Dict[str, Any]],
+        session_id: str,
+        timestamp: Optional[str] = None,
+        language: Optional[str] = None,
+    ) -> str:
         """Generate HTML reports from evaluation results"""
+
+        lang = _normalize_language(language)
+        text = LANGUAGE_TEXT[lang]
         
         # Basic information
         if timestamp:
@@ -34,7 +136,7 @@ class HTMLExporter:
         # Calculation of statistics by category
         category_stats = {}
         for r in results:
-            cat = r.get("category", "未分類")
+            cat = r.get("category") or text["unclassified"]
             if cat not in category_stats:
                 category_stats[cat] = {"total": 0, "passed": 0, "failed": 0, "error": 0, "skipped": 0}
             
@@ -51,12 +153,14 @@ class HTMLExporter:
                     category_stats[cat]["error"] += 1
         
         # Generation of HTML
+        progress_text = text["progress_text"].format(pass_rate=pass_rate)
+
         html = f"""<!DOCTYPE html>
-<html lang="ja">
+<html lang="{text['html_lang']}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM評価レポート - {report_date}</title>
+    <title>{text['title']} - {report_date}</title>
     <style>
         body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -202,53 +306,53 @@ class HTMLExporter:
 </head>
 <body>
     <div class="container">
-        <h1>LLM評価レポート</h1>
+        <h1>{text['report_heading']}</h1>
         <div class="header-info">
             <div>
-                <p><strong>セッションID:</strong> {session_id}</p>
-                <p><strong>レポート生成日時:</strong> {report_date}</p>
+                <p><strong>{text['session_id_label']}</strong> {session_id}</p>
+                <p><strong>{text['generated_at_label']}</strong> {report_date}</p>
             </div>
         </div>
-        
-        <h2>評価サマリー</h2>
+
+        <h2>{text['summary_heading']}</h2>
         <div class="summary-box">
             <div class="summary-item total">
                 <h3>{total}</h3>
-                <p>テスト総数</p>
+                <p>{text['summary']['total']}</p>
             </div>
             <div class="summary-item passed">
                 <h3>{passed}</h3>
-                <p>合格</p>
+                <p>{text['summary']['passed']}</p>
             </div>
             <div class="summary-item failed">
                 <h3>{failed}</h3>
-                <p>不合格</p>
+                <p>{text['summary']['failed']}</p>
             </div>
             <div class="summary-item error">
                 <h3>{error}</h3>
-                <p>エラー</p>
+                <p>{text['summary']['error']}</p>
             </div>
             <div class="summary-item skipped">
                 <h3>{skipped}</h3>
-                <p>スキップ</p>
+                <p>{text['summary']['skipped']}</p>
             </div>
         </div>
-        
+
         <div class="progress-bar">
-            <div class="progress" style="width: {pass_rate}%;">{pass_rate}% 合格</div>
+            <div class="progress" style="width: {pass_rate}%;">{progress_text}</div>
         </div>
-        
-        <h2>カテゴリ別結果</h2>
+
+        <h2>{text['category_results_heading']}</h2>
         <table>
             <thead>
                 <tr>
-                    <th>カテゴリ</th>
-                    <th>テスト数</th>
-                    <th>合格</th>
-                    <th>不合格</th>
-                    <th>エラー</th>
-                    <th>スキップ</th>
-                    <th>合格率</th>
+                    <th>{text['table_headers']['category']}</th>
+                    <th>{text['table_headers']['tests']}</th>
+                    <th>{text['table_headers']['passed']}</th>
+                    <th>{text['table_headers']['failed']}</th>
+                    <th>{text['table_headers']['error']}</th>
+                    <th>{text['table_headers']['skipped']}</th>
+                    <th>{text['table_headers']['pass_rate']}</th>
                 </tr>
             </thead>
             <tbody>
@@ -272,52 +376,52 @@ class HTMLExporter:
             </tbody>
         </table>
         
-        <h2>詳細結果</h2>
+        <h2>{text['details_heading']}</h2>
 """
         
         # Add details of each test result
         for i, result in enumerate(results):
             prompt = result.get("prompt", "")
-            category = result.get("category", "未分類")
+            category = result.get("category") or text["unclassified"]
             requirement = result.get("requirement", "")
             target_response = result.get("target_response", "")
             evaluation = result.get("evaluation", {})
             passed = evaluation.get("passed")
             skipped = evaluation.get("skipped", False)
             reason = evaluation.get("reason", "")
-            
+
             if skipped:
                 result_class = "skipped-result"
-                result_text = "スキップ"
+                result_text = text["status"]["skipped"]
             elif passed is True:
                 result_class = "passed-result"
-                result_text = "合格"
+                result_text = text["status"]["passed"]
             elif passed is False:
                 result_class = "failed-result"
-                result_text = "不合格"
+                result_text = text["status"]["failed"]
             else:
                 result_class = "error-result"
-                result_text = "エラー"
-            
+                result_text = text["status"]["error"]
+
             html += f"""
         <div class="detail-box">
-            <h3>テスト #{i+1} - <span class="{result_class}">{result_text}</span></h3>
+            <h3>{text['test_label']} #{i+1} - <span class="{result_class}">{result_text}</span></h3>
             <span class="category-badge">{category}</span>
-            
+
             <div class="requirement">
-                <strong>要件:</strong> {requirement}
+                <strong>{text['labels']['requirement']}</strong> {requirement}
             </div>
-            
-            <h4>敵対的プロンプト</h4>
+
+            <h4>{text['labels']['prompt']}</h4>
             <div class="prompt">{prompt}</div>
-            
-            <h4>ターゲットAIの応答</h4>
+
+            <h4>{text['labels']['response']}</h4>
             <div class="response">{target_response}</div>
-            
-            <h4>評価結果</h4>
+
+            <h4>{text['labels']['evaluation']}</h4>
             <div class="evaluation {result_class}">
-                <p><strong>判定:</strong> {result_text}</p>
-                <p><strong>理由:</strong> {reason}</p>
+                <p><strong>{text['labels']['judgement']}</strong> {result_text}</p>
+                <p><strong>{text['labels']['reason']}</strong> {reason}</p>
             </div>
         </div>
 """
@@ -383,9 +487,14 @@ def setup_html_export_routes(app: FastAPI):
         if not session["evaluation_results"]:
             raise HTTPException(status_code=400, detail="評価結果がありません")
         
+        lang = _normalize_language(
+            request.query_params.get("lang") or request.query_params.get("language")
+        )
+
         html_content = HTMLExporter.generate_html_report(
-            session["evaluation_results"], 
-            session_id
+            session["evaluation_results"],
+            session_id,
+            language=lang
         )
         
         headers = {
@@ -433,10 +542,15 @@ def setup_html_export_routes(app: FastAPI):
         session_id = parts[0]
         timestamp = "_".join(parts[1:]) if len(parts) > 1 else ""
         
+        lang = _normalize_language(
+            request.query_params.get("lang") or request.query_params.get("language")
+        )
+
         html_content = HTMLExporter.generate_html_report(
-            results, 
+            results,
             session_id,
-            timestamp
+            timestamp,
+            language=lang
         )
         
         headers = {

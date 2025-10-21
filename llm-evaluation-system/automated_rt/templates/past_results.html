@@ -77,7 +77,7 @@
                                 <!-- Use two separate buttons instead of a drop-down menu -->
                                 <div class="d-grid gap-2">
                                     <a href="/past_results/{{ file.filename }}" class="btn btn-primary" data-i18n="buttons.viewDetails">詳細を表示</a>
-                                    <a href="/export/html/file/{{ file.filename }}" class="btn btn-success" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a>
+                                    <a href="/export/html/file/{{ file.filename }}" class="btn btn-success" data-export-html data-base-href="/export/html/file/{{ file.filename }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a>
                                     <a href="/export/csv/file/{{ file.filename }}" class="btn btn-secondary" data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a>
                                 </div>
                             </div>
@@ -142,7 +142,22 @@
             }
         };
 
-        automatedRtI18n.register({ messages: pastResultsMessages });
+        function updateExportLinks(lang) {
+            const language = lang || automatedRtI18n.getLanguage();
+            const links = document.querySelectorAll('[data-export-html]');
+            links.forEach((link) => {
+                const baseHref = link.getAttribute('data-base-href') || link.getAttribute('href');
+                if (!baseHref) return;
+                const url = new URL(baseHref, window.location.origin);
+                url.searchParams.set('lang', language);
+                link.setAttribute('href', url.pathname + url.search);
+            });
+        }
+
+        automatedRtI18n.register({
+            messages: pastResultsMessages,
+            onLanguageChange: [updateExportLinks]
+        });
 
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('[data-lang]').forEach(function(button) {
@@ -150,6 +165,8 @@
                     automatedRtI18n.setLanguage(button.dataset.lang);
                 });
             });
+
+            updateExportLinks();
         });
     </script>
 </body>

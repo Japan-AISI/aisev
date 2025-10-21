@@ -90,10 +90,10 @@
                 </button>
                 <ul class="dropdown-menu">
                     {% if is_past_result %}
-                        <li><a class="dropdown-item" href="/export/html/file/{{ filename }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/html/file/{{ filename }}" data-export-html data-base-href="/export/html/file/{{ filename }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
                         <li><a class="dropdown-item" href="/export/csv/file/{{ filename }}" data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
                     {% else %}
-                        <li><a class="dropdown-item" href="/export/html/{{ session_id }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/html/{{ session_id }}" data-export-html data-base-href="/export/html/{{ session_id }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
                         <li><a class="dropdown-item" href="/export/csv/{{ session_id }}" data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
                     {% endif %}
                 </ul>
@@ -334,10 +334,22 @@
             pastResultElement.textContent = automatedRtI18n.t('page.pastResult', { timestamp });
         }
 
+        function updateExportLinks(lang) {
+            const language = lang || automatedRtI18n.getLanguage();
+            const links = document.querySelectorAll('[data-export-html]');
+            links.forEach((link) => {
+                const baseHref = link.getAttribute('data-base-href') || link.getAttribute('href');
+                if (!baseHref) return;
+                const url = new URL(baseHref, window.location.origin);
+                url.searchParams.set('lang', language);
+                link.setAttribute('href', url.pathname + url.search);
+            });
+        }
+
         automatedRtI18n.register({
             messages: resultsMessages,
             textMap: resultsTextMap,
-            onLanguageChange: [updatePastResultInfo]
+            onLanguageChange: [updatePastResultInfo, updateExportLinks]
         });
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -348,6 +360,7 @@
             });
 
             updatePastResultInfo();
+            updateExportLinks();
 
             // Category filter
             const categoryButtons = document.querySelectorAll('#categoryFilters button');
