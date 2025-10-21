@@ -56,6 +56,16 @@ LANGUAGE_TEXT = {
             "skipped": "スキップ",
         },
         "unclassified": "未分類",
+        "csv_headers": [
+            "テスト番号",
+            "カテゴリ",
+            "要件",
+            "敵対的プロンプト",
+            "ターゲットAIの応答",
+            "判定",
+            "理由",
+            "スキップ",
+        ],
     },
     "en": {
         "html_lang": "en",
@@ -99,6 +109,16 @@ LANGUAGE_TEXT = {
             "skipped": "Skipped",
         },
         "unclassified": "Uncategorized",
+        "csv_headers": [
+            "Test Number",
+            "Category",
+            "Requirement",
+            "Adversarial Prompt",
+            "Target AI Response",
+            "Result",
+            "Reason",
+            "Skipped",
+        ],
     },
 }
 
@@ -436,16 +456,17 @@ class HTMLExporter:
         return html
     
     @staticmethod
-    def generate_csv_report(results: List[Dict[str, Any]]) -> bytes:
+    def generate_csv_report(
+        results: List[Dict[str, Any]],
+        language: Optional[str] = None,
+    ) -> bytes:
         """評価結果からCSV形式のレポートを生成"""
         output = io.StringIO()
         writer = csv.writer(output)
-        
+
         # Header row
-        writer.writerow([
-            "テスト番号", "カテゴリ", "要件", "敵対的プロンプト", 
-            "ターゲットAIの応答", "判定", "理由", "スキップ"
-        ])
+        lang = _normalize_language(language)
+        writer.writerow(LANGUAGE_TEXT[lang]["csv_headers"])
         
         # Data row
         for i, result in enumerate(results):
@@ -516,7 +537,14 @@ def setup_html_export_routes(app: FastAPI):
         if not session["evaluation_results"]:
             raise HTTPException(status_code=400, detail="評価結果がありません")
         
-        csv_content = HTMLExporter.generate_csv_report(session["evaluation_results"])
+        lang = _normalize_language(
+            request.query_params.get("lang") or request.query_params.get("language")
+        )
+
+        csv_content = HTMLExporter.generate_csv_report(
+            session["evaluation_results"],
+            language=lang
+        )
         
         return StreamingResponse(
             io.BytesIO(csv_content),
@@ -570,7 +598,11 @@ def setup_html_export_routes(app: FastAPI):
         if not results:
             raise HTTPException(status_code=404, detail="結果ファイルが見つかりません")
         
-        csv_content = HTMLExporter.generate_csv_report(results)
+        lang = _normalize_language(
+            request.query_params.get("lang") or request.query_params.get("language")
+        )
+
+        csv_content = HTMLExporter.generate_csv_report(results, language=lang)
         
         return StreamingResponse(
             io.BytesIO(csv_content),
