@@ -372,7 +372,7 @@ class HTMLExporter:
                     <td>{cat_pass_rate}%</td>
                 </tr>"""
         
-        html += """
+        html += f"""
             </tbody>
         </table>
         
