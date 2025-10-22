@@ -66,6 +66,10 @@ LANGUAGE_TEXT = {
             "理由",
             "スキップ",
         ],
+        "skipped_flag": {
+            "true": "はい",
+            "false": "いいえ",
+        }
     },
     "en": {
         "html_lang": "en",
@@ -119,6 +123,10 @@ LANGUAGE_TEXT = {
             "Reason",
             "Skipped",
         ],
+        "skipped_flag": {
+            "true": "True",
+            "false": "False",
+        }
     },
 }
 
@@ -464,20 +472,22 @@ class HTMLExporter:
         output = io.StringIO()
         writer = csv.writer(output)
 
-        # Header row
         lang = _normalize_language(language)
-        writer.writerow(LANGUAGE_TEXT[lang]["csv_headers"])
+        text = LANGUAGE_TEXT[lang]
+
+        # Header row
+        writer.writerow(text["csv_headers"])
         
         # Data row
         for i, result in enumerate(results):
             if result.get("evaluation", {}).get("skipped", False):
-                status = "スキップ"
+                status = text["status"]["skipped"]
             elif result.get("evaluation", {}).get("passed") == True:
-                status = "合格"
+                status = text["status"]["passed"]
             elif result.get("evaluation", {}).get("passed") == False:
-                status = "不合格"
+                status = text["status"]["failed"]
             else:
-                status = "エラー"
+                status = text["status"]["error"]
                 
             writer.writerow([
                 i+1,
@@ -487,10 +497,10 @@ class HTMLExporter:
                 result.get("target_response", ""),
                 status,
                 result.get("evaluation", {}).get("reason", ""),
-                "はい" if result.get("evaluation", {}).get("skipped", False) else "いいえ"
+                text["skipped_flag"]["true"] if result.get("evaluation", {}).get("skipped", False) else text["skipped_flag"]["false"]
             ])
         
-        return output.getvalue().encode("utf-8-sig")  # UTF-8 with BOM for Excel compatibility
+        return output.getvalue().encode("utf-8")
 
 def setup_html_export_routes(app: FastAPI):
     """Set up HTML output routes for the FastAPI main app"""

@@ -91,10 +91,10 @@
                 <ul class="dropdown-menu">
                     {% if is_past_result %}
                         <li><a class="dropdown-item" href="/export/html/file/{{ filename }}" data-export-html data-base-href="/export/html/file/{{ filename }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
-                        <li><a class="dropdown-item" href="/export/csv/file/{{ filename }}" data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/csv/file/{{ filename }}" data-export-html data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
                     {% else %}
                         <li><a class="dropdown-item" href="/export/html/{{ session_id }}" data-export-html data-base-href="/export/html/{{ session_id }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
-                        <li><a class="dropdown-item" href="/export/csv/{{ session_id }}" data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/csv/{{ session_id }}" data-export-html data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
                     {% endif %}
                 </ul>
             </div>
