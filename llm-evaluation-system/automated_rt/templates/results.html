@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>評価結果 - AIセーフティ評価 自動レッドチーミング</title>
+    <title data-i18n="page.title">評価結果 - AIセーフティ評価 自動レッドチーミング</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .result-card {
@@ -69,27 +69,32 @@
 </head>
 <body>
     <div class="container mt-4">
-        <h1 class="mb-4">評価結果
-            {% if is_past_result %}
-                <small class="text-muted">(過去の結果: {{ timestamp }})</small>
-            {% endif %}
-        </h1>
+        <div class="d-flex justify-content-end mb-3">
+            <div class="btn-group" role="group" aria-label="Language switch">
+                <button type="button" class="btn btn-outline-secondary active" data-lang="ja" data-i18n="language.japanese">日本語</button>
+                <button type="button" class="btn btn-outline-secondary" data-lang="en" data-i18n="language.english">English</button>
+            </div>
+        </div>
+        <h1 class="mb-4" data-i18n="page.heading">評価結果</h1>
+        {% if is_past_result %}
+            <p class="text-muted" id="pastResultInfo" data-timestamp="{{ timestamp }}" data-i18n="page.pastResult">過去の結果: {{ timestamp }}</p>
+        {% endif %}
         
         <div class="mb-4">
-            <a href="/" class="btn btn-primary me-2">ホームに戻る</a>
-            <a href="/past_results" class="btn btn-secondary me-2">過去の評価結果一覧</a>
-            
+            <a href="/" class="btn btn-primary me-2" data-i18n="buttons.backHome">ホームに戻る</a>
+            <a href="/past_results" class="btn btn-secondary me-2" data-i18n="buttons.pastResults">過去の評価結果一覧</a>
+
             <div class="btn-group">
-                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="buttons.export">
                     エクスポート
                 </button>
                 <ul class="dropdown-menu">
                     {% if is_past_result %}
-                        <li><a class="dropdown-item" href="/export/html/file/{{ filename }}">HTML形式でダウンロード</a></li>
-                        <li><a class="dropdown-item" href="/export/csv/file/{{ filename }}">CSV形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/html/file/{{ filename }}" data-export-html data-base-href="/export/html/file/{{ filename }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/csv/file/{{ filename }}" data-export-html data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
                     {% else %}
-                        <li><a class="dropdown-item" href="/export/html/{{ session_id }}">HTML形式でダウンロード</a></li>
-                        <li><a class="dropdown-item" href="/export/csv/{{ session_id }}">CSV形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/html/{{ session_id }}" data-export-html data-base-href="/export/html/{{ session_id }}" data-i18n="buttons.downloadHtml">HTML形式でダウンロード</a></li>
+                        <li><a class="dropdown-item" href="/export/csv/{{ session_id }}" data-export-html data-i18n="buttons.downloadCsv">CSV形式でダウンロード</a></li>
                     {% endif %}
                 </ul>
             </div>
@@ -98,13 +103,13 @@
         <!-- Evaluation summary -->
         <div class="card mb-4">
             <div class="card-header bg-dark text-white">
-                <h5 class="card-title mb-0">評価サマリー</h5>
+                <h5 class="card-title mb-0" data-i18n="summary.heading">評価サマリー</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="card text-white bg-primary mb-3">
-                            <div class="card-header">テスト総数</div>
+                            <div class="card-header" data-i18n="summary.total">テスト総数</div>
                             <div class="card-body">
                                 <h5 class="card-title" id="totalTests">{{ results|length }}</h5>
                             </div>
@@ -112,7 +117,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="card text-white bg-success mb-3">
-                            <div class="card-header">合格</div>
+                            <div class="card-header" data-i18n="summary.passed">合格</div>
                             <div class="card-body">
                                 <h5 class="card-title" id="passedTests">{{ results|selectattr('evaluation.passed', 'equalto', true)|list|length }}</h5>
                                 {% set not_skipped = results|rejectattr('evaluation.skipped', 'defined')|list|length %}
@@ -126,7 +131,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="card text-white bg-danger mb-3">
-                            <div class="card-header">不合格</div>
+                            <div class="card-header" data-i18n="summary.failed">不合格</div>
                             <div class="card-body">
                                 <h5 class="card-title" id="failedTests">{{ results|selectattr('evaluation.passed', 'equalto', false)|list|length }}</h5>
                             </div>
@@ -134,7 +139,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="card text-white bg-secondary mb-3">
-                            <div class="card-header">スキップ</div>
+                            <div class="card-header" data-i18n="summary.skipped">スキップ</div>
                             <div class="card-body">
                                 <h5 class="card-title" id="skippedTests">{{ results|selectattr('evaluation.skipped', 'defined')|list|length }}</h5>
                             </div>
@@ -147,22 +152,22 @@
         <!-- Category filters -->
         <div class="card mb-4">
             <div class="card-header bg-secondary text-white">
-                <h5 class="card-title mb-0">カテゴリフィルター</h5>
+                <h5 class="card-title mb-0" data-i18n="filters.categoryHeading">カテゴリフィルター</h5>
             </div>
             <div class="card-body">
                 <div class="btn-group mb-3" role="group" id="categoryFilters">
-                    <button type="button" class="btn btn-outline-primary active" data-category="all">全て</button>
-                    <button type="button" class="btn btn-outline-primary" data-category="有害情報の出力制御">有害情報の出力制御</button>
-                    <button type="button" class="btn btn-outline-primary" data-category="偽誤情報の出力・誘導の防止">偽誤情報の出力・誘導の防止</button>
-                    <button type="button" class="btn btn-outline-primary" data-category="公平性と包摂性">公平性と包摂性</button>
-                    <button type="button" class="btn btn-outline-primary" data-category="ハイリスク利用・目的外利用への対処">ハイリスク利用・目的外利用への対処</button>
-                    <button type="button" class="btn btn-outline-primary" data-category="プライバシー保護">プライバシー保護</button>
+                    <button type="button" class="btn btn-outline-primary active" data-category="all" data-i18n="filters.all">全て</button>
+                    <button type="button" class="btn btn-outline-primary" data-category="有害情報の出力制御" data-i18n="filters.toxic">有害情報の出力制御</button>
+                    <button type="button" class="btn btn-outline-primary" data-category="偽誤情報の出力・誘導の防止" data-i18n="filters.misinformation">偽誤情報の出力・誘導の防止</button>
+                    <button type="button" class="btn btn-outline-primary" data-category="公平性と包摂性" data-i18n="filters.fairness">公平性と包摂性</button>
+                    <button type="button" class="btn btn-outline-primary" data-category="ハイリスク利用・目的外利用への対処" data-i18n="filters.highRisk">ハイリスク利用・目的外利用への対処</button>
+                    <button type="button" class="btn btn-outline-primary" data-category="プライバシー保護" data-i18n="filters.privacy">プライバシー保護</button>
                 </div>
                 <div class="btn-group" role="group" id="statusFilters">
-                    <button type="button" class="btn btn-outline-secondary active" data-status="all">全てのステータス</button>
-                    <button type="button" class="btn btn-outline-success" data-status="passed">合格</button>
-                    <button type="button" class="btn btn-outline-danger" data-status="failed">不合格</button>
-                    <button type="button" class="btn btn-outline-secondary" data-status="skipped">スキップ</button>
+                    <button type="button" class="btn btn-outline-secondary active" data-status="all" data-i18n="filters.allStatuses">全てのステータス</button>
+                    <button type="button" class="btn btn-outline-success" data-status="passed" data-i18n="filters.statusPassed">合格</button>
+                    <button type="button" class="btn btn-outline-danger" data-status="failed" data-i18n="filters.statusFailed">不合格</button>
+                    <button type="button" class="btn btn-outline-secondary" data-status="skipped" data-i18n="filters.statusSkipped">スキップ</button>
                 </div>
             </div>
         </div>
@@ -178,32 +183,32 @@
                             <span class="category-badge bg-info">{{ result.category }}</span>
                             <span class="evaluation-result {{ status_class }}-text">
                                 {% if result.evaluation.skipped %}
-                                    ⏭️ スキップ
+                                    ⏭️ <span data-i18n="status.skipped">スキップ</span>
                                 {% elif result.evaluation.passed %}
-                                    ✅ 合格
+                                    ✅ <span data-i18n="status.passed">合格</span>
                                 {% else %}
-                                    ❌ 不合格
+                                    ❌ <span data-i18n="status.failed">不合格</span>
                                 {% endif %}
                             </span>
                         </span>
-                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" data-i18n="results.details">
                             詳細
                         </button>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title">要件: {{ result.requirement }}</h5>
+                        <h5 class="card-title"><span data-i18n="results.requirement">要件:</span> {{ result.requirement }}</h5>
                         <div class="collapse" id="collapse{{ loop.index }}">
                             <div class="card-text mt-3">
                                 <div class="mb-3">
-                                    <h6>敵対的プロンプト:</h6>
+                                    <h6 data-i18n="results.adversarialPrompt">敵対的プロンプト:</h6>
                                     <div class="prompt-text">{{ result.prompt }}</div>
                                 </div>
                                 <div class="mb-3">
-                                    <h6>ターゲットAIの応答:</h6>
+                                    <h6 data-i18n="results.targetResponse">ターゲットAIの応答:</h6>
                                     <div class="response-text">{{ result.target_response }}</div>
                                 </div>
                                 <div>
-                                    <h6>評価理由:</h6>
+                                    <h6 data-i18n="results.evaluationReason">評価理由:</h6>
                                     <p>{{ result.evaluation.reason }}</p>
                                 </div>
                             </div>
@@ -215,8 +220,148 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/i18n.js"></script>
     <script>
+        const resultsMessages = {
+            ja: {
+                language: { japanese: "日本語", english: "English" },
+                page: {
+                    title: "評価結果 - AIセーフティ評価 自動レッドチーミング",
+                    heading: "評価結果",
+                    pastResult: "過去の結果: {{timestamp}}"
+                },
+                buttons: {
+                    backHome: "ホームに戻る",
+                    pastResults: "過去の評価結果一覧",
+                    export: "エクスポート",
+                    downloadHtml: "HTML形式でダウンロード",
+                    downloadCsv: "CSV形式でダウンロード"
+                },
+                summary: {
+                    heading: "評価サマリー",
+                    total: "テスト総数",
+                    passed: "合格",
+                    failed: "不合格",
+                    skipped: "スキップ"
+                },
+                filters: {
+                    categoryHeading: "カテゴリフィルター",
+                    all: "全て",
+                    toxic: "有害情報の出力制御",
+                    misinformation: "偽誤情報の出力・誘導の防止",
+                    fairness: "公平性と包摂性",
+                    highRisk: "ハイリスク利用・目的外利用への対処",
+                    privacy: "プライバシー保護",
+                    allStatuses: "全てのステータス",
+                    statusPassed: "合格",
+                    statusFailed: "不合格",
+                    statusSkipped: "スキップ"
+                },
+                status: {
+                    skipped: "スキップ",
+                    passed: "合格",
+                    failed: "不合格"
+                },
+                results: {
+                    details: "詳細",
+                    requirement: "要件:",
+                    adversarialPrompt: "敵対的プロンプト:",
+                    targetResponse: "ターゲットAIの応答:",
+                    evaluationReason: "評価理由:"
+                }
+            },
+            en: {
+                language: { japanese: "Japanese", english: "English" },
+                page: {
+                    title: "Evaluation Results - AI Safety Evaluation Automated Red Teaming",
+                    heading: "Evaluation Results",
+                    pastResult: "Past result: {{timestamp}}"
+                },
+                buttons: {
+                    backHome: "Back to Home",
+                    pastResults: "Past Evaluation Results",
+                    export: "Export",
+                    downloadHtml: "Download as HTML",
+                    downloadCsv: "Download as CSV"
+                },
+                summary: {
+                    heading: "Evaluation Summary",
+                    total: "Total Tests",
+                    passed: "Passed",
+                    failed: "Failed",
+                    skipped: "Skipped"
+                },
+                filters: {
+                    categoryHeading: "Category Filters",
+                    all: "All",
+                    toxic: "Control of Toxic Output",
+                    misinformation: "Prevention of Misinformation, Disinformation and Manipulation",
+                    fairness: "Fairness and Inclusion",
+                    highRisk: "Addressing High-risk Use and Unintended Use",
+                    privacy: "Privacy Protection",
+                    allStatuses: "All Statuses",
+                    statusPassed: "Passed",
+                    statusFailed: "Failed",
+                    statusSkipped: "Skipped"
+                },
+                status: {
+                    skipped: "Skipped",
+                    passed: "Passed",
+                    failed: "Failed"
+                },
+                results: {
+                    details: "Details",
+                    requirement: "Requirement:",
+                    adversarialPrompt: "Adversarial Prompt:",
+                    targetResponse: "Target AI Response:",
+                    evaluationReason: "Evaluation Reason:"
+                }
+            }
+        };
+
+        const resultsTextMap = {
+            "有害情報の出力制御": { ja: "有害情報の出力制御", en: "Control of Toxic Output" },
+            "偽誤情報の出力・誘導の防止": { ja: "偽誤情報の出力・誘導の防止", en: "Prevention of Misinformation, Disinformation and Manipulation" },
+            "公平性と包摂性": { ja: "公平性と包摂性", en: "Fairness and Inclusion" },
+            "ハイリスク利用・目的外利用への対処": { ja: "ハイリスク利用・目的外利用への対処", en: "Addressing High-risk Use and Unintended Use" },
+            "プライバシー保護": { ja: "プライバシー保護", en: "Privacy Protection" }
+        };
+
+        function updatePastResultInfo() {
+            const pastResultElement = document.getElementById('pastResultInfo');
+            if (!pastResultElement) return;
+            const timestamp = pastResultElement.dataset.timestamp;
+            pastResultElement.textContent = automatedRtI18n.t('page.pastResult', { timestamp });
+        }
+
+        function updateExportLinks(lang) {
+            const language = lang || automatedRtI18n.getLanguage();
+            const links = document.querySelectorAll('[data-export-html]');
+            links.forEach((link) => {
+                const baseHref = link.getAttribute('data-base-href') || link.getAttribute('href');
+                if (!baseHref) return;
+                const url = new URL(baseHref, window.location.origin);
+                url.searchParams.set('lang', language);
+                link.setAttribute('href', url.pathname + url.search);
+            });
+        }
+
+        automatedRtI18n.register({
+            messages: resultsMessages,
+            textMap: resultsTextMap,
+            onLanguageChange: [updatePastResultInfo, updateExportLinks]
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-lang]').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    automatedRtI18n.setLanguage(button.dataset.lang);
+                });
+            });
+
+            updatePastResultInfo();
+            updateExportLinks();
+
             // Category filter
             const categoryButtons = document.querySelectorAll('#categoryFilters button');
             categoryButtons.forEach(button => {
@@ -243,15 +388,16 @@
             });
             
             function filterResults() {
-                const selectedCategory = document.querySelector('#categoryFilters button.active').getAttribute('data-category');
+                //const selectedCategory = document.querySelector('#categoryFilters button.active').getAttribute('data-category');
+                const selectedCategory = document.querySelector('#categoryFilters button.active').innerText;
                 const selectedStatus = document.querySelector('#statusFilters button.active').getAttribute('data-status');
-                
+
                 const resultCards = document.querySelectorAll('.result-card');
                 resultCards.forEach(card => {
                     const cardCategory = card.getAttribute('data-category');
                     const cardStatus = card.getAttribute('data-status');
                     
-                    const categoryMatch = selectedCategory === 'all' || cardCategory === selectedCategory;
+                    const categoryMatch = selectedCategory === '全て' || selectedCategory === 'All' || cardCategory === selectedCategory;
                     const statusMatch = selectedStatus === 'all' || cardStatus === selectedStatus;
                     
                     if (categoryMatch && statusMatch) {

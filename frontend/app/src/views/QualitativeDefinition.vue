@@ -113,8 +113,11 @@
 import { computed, ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Header from "../components/Header.vue";
-import { EvaluationCriteriaConst as EvaluationCriteriaJa } from "../constants/EvaluationCriteria";
-import { EvaluationCriteriaConst as EvaluationCriteriaEn } from "../constants/EvaluationCriteriaEn";
+import {
+  getPerspectiveListByLocale,
+  toEnglishPerspective,
+  toJapanesePerspective,
+} from "../utils/perspectiveMapping";
 
 const { t, locale } = useI18n();
 
@@ -124,28 +127,65 @@ const breadcrumbs = [
   { label: "qualitativeDefinitionScreen" },
 ];
 
-// i18n support: Switch criteria list by language
-const getCriteria = () => {
-  if (locale.value === "en" || locale.value.startsWith("en")) {
-    return EvaluationCriteriaEn.LIST;
-  } else {
-    return EvaluationCriteriaJa.LIST;
-  }
-};
-const criteria = computed(() => getCriteria());
+const criteria = computed(() => getPerspectiveListByLocale(locale.value));
 
 let nextId = 1;
 
-// define the Question interface
 interface Question {
   id: number;
   name: string;
   perspective: string;
   contents: string[];
 }
-const questions = ref<Question[]>([]);
 
-// get request to fetch questions
+const questions = ref<Question[]>([]);
+const selectedQuestionId = ref<number | null>(null);
+
+const newQuestion = ref({
+  name: "",
+  perspective: "",
+  contents: [""],
+});
+
+watch(criteria, (newCriteria: string[]) => {
+  if (newCriteria.length > 0 && !newQuestion.value.perspective) {
+    newQuestion.value.perspective = newCriteria[0];
+  }
+});
+
+watch(
+  () => locale.value,
+  (newLocale) => {
+    if (!newQuestion.value.perspective) return;
+    newQuestion.value.perspective = newLocale.startsWith("en")
+      ? toEnglishPerspective(newQuestion.value.perspective) ||
+        newQuestion.value.perspective
+      : toJapanesePerspective(newQuestion.value.perspective) ||
+        newQuestion.value.perspective;
+  }
+);
+
+const localizedQuestions = computed(() =>
+  questions.value.map((q: Question) => ({
+    ...q,
+    perspective: locale.value.startsWith("en")
+      ? toEnglishPerspective(q.perspective) || q.perspective
+      : toJapanesePerspective(q.perspective) || q.perspective,
+  }))
+);
+
+const itemsPerPage = 5;
+const currentPage = ref(1);
+
+const pagedQuestions = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  return localizedQuestions.value.slice(start, start + itemsPerPage);
+});
+
+const totalPages = computed(() =>
+  Math.ceil(localizedQuestions.value.length / itemsPerPage)
+);
+
 async function fetchQuestions() {
   try {
     const response = await fetch("http://localhost:8000/qualitative_datasets", {
@@ -171,7 +211,6 @@ async function fetchQuestions() {
   }
 }
 
-// Initialize component
 onMounted(() => {
   fetchQuestions();
   if (criteria.value.length > 0) {
@@ -179,44 +218,15 @@ onMounted(() => {
   }
 });
 
-const selectedQuestionId = ref<number | null>(null);
-
-// define the newQuestion object
-const newQuestion = ref({
-  name: "",
-  perspective: "",
-  contents: [""],
-});
-
-// Watch criteria changes to update perspective
-watch(criteria, (newCriteria: string[]) => {
-  if (newCriteria.length > 0 && !newQuestion.value.perspective) {
-    newQuestion.value.perspective = newCriteria[0];
-  }
-});
-
-const itemsPerPage = 5;
-const currentPage = ref(1);
-const pagedQuestions = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return questions.value.slice(start, start + itemsPerPage);
-});
-const totalPages = computed(() =>
-  Math.ceil(questions.value.length / itemsPerPage)
-);
-
-// function to handle page navigation
 function goToPage(page: number) {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
 }
 
-// function to add a new content field
 function addContent() {
   newQuestion.value.contents.push("");
 }
 
-// addQuestion function to handle the form submission
 function addQuestion() {
   if (
     !newQuestion.value.name ||
@@ -224,19 +234,12 @@ function addQuestion() {
     newQuestion.value.contents.length === 0
   )
     return;
-  
-  // Convert criterion to Japanese for API
-  let criterionForApi = newQuestion.value.perspective;
-  if (locale.value === "en" || locale.value.startsWith("en")) {
-    const enIdx = EvaluationCriteriaEn.LIST.indexOf(newQuestion.value.perspective);
-    if (enIdx !== -1) {
-      criterionForApi = EvaluationCriteriaJa.LIST[enIdx];
-    }
-  }
-  
+
   const payload = {
     name: newQuestion.value.name,
-    criterion: criterionForApi,
+    criterion:
+      toJapanesePerspective(newQuestion.value.perspective) ||
+      newQuestion.value.perspective,
     contents: newQuestion.value.contents.filter((c: string) => c.trim() !== ""),
   };
   console.log("Add data:", JSON.stringify(payload, null, 2));
@@ -266,7 +269,6 @@ function addQuestion() {
     });
 }
 
-// function to delete the selected question
 function deleteSelectedQuestion() {
   if (selectedQuestionId.value === null) {
     window.alert(t("noQuestionSelected"));
@@ -279,24 +281,31 @@ function deleteSelectedQuestion() {
     `http://localhost:8000/qualitative_datasets/${selectedQuestionId.value}`,
     {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Origin: "http://localhost:8080",
-        "Access-Controll-Request": "DELETE",
-      },
+      headers: { "Content-Type": "application/json" },
     }
   )
     .then((res) => {
-      if (!res.ok) throw new Error(t("deletionFailed"));
-      selectedQuestionId.value = null;
+      if (!res.ok) throw new Error(t("deletionFailedQualitative"));
+      return res.json();
+    })
+    .then(() => {
       window.alert(t("deletionCompleted"));
+      selectedQuestionId.value = null;
       fetchQuestions();
     })
     .catch((err) => {
       console.error(err);
-      window.alert(t("deletionFailed"));
+      window.alert(t("deletionFailedQualitative"));
     });
 }
+
+const totalQuestions = computed(() => questions.value.length);
+const quantitativeQuestions = computed(() => []);
+const qualitativeQuestions = computed(() => []);
+
+const registerQuestions = () => {
+  window.alert("Not implemented");
+};
 </script>
 
 <style scoped>

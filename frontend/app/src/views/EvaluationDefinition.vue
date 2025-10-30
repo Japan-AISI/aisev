@@ -230,18 +230,14 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Header from "../components/Header.vue";
+import {
+  getPerspectiveListByLocale,
+  TEN_PERSPECTIVES_JA,
+} from "../utils/perspectiveMapping";
 
 const { locale, t } = useI18n();
 
-import { EvaluationCriteriaConst as EvaluationCriteriaConstJa } from "../constants/EvaluationCriteria";
-import { EvaluationCriteriaConst as EvaluationCriteriaConstEn } from "../constants/EvaluationCriteriaEn";
-const getLabels = () => {
-  if (locale.value === "en" || locale.value.startsWith("en")) {
-    return EvaluationCriteriaConstEn.LIST;
-  } else {
-    return EvaluationCriteriaConstJa.LIST;
-  }
-};
+const getLabels = () => getPerspectiveListByLocale(locale.value);
 
 
 
@@ -390,7 +386,7 @@ const registDefinition = async () => {
   const definition = {
     evaluationName: evaluationName.value,
     // criteria: evaluationCriteria.value.map((criterion, index) => {
-    criteria: EvaluationCriteriaConstJa.LIST.map((criterion, index) => {
+    criteria: TEN_PERSPECTIVES_JA.map((criterion, index) => {
       // ID of the dataset
       const selectedDatasetIds =
         selectedQuantitativeDatasets.value[index] || [];
@@ -417,7 +413,10 @@ const registDefinition = async () => {
         criterionData.use_gsn = true;
       }
 
-      return criterionData;
+      return {
+        ...criterionData,
+        criterion,
+      };
     }),
   };
 

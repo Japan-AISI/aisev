@@ -5,6 +5,7 @@ import pickle
 from src.db.define_tables import UseGSN
 from src.gsn.gsn_explorer import GSNExplorer
 from src.utils.logger import logger
+from src.constants.perspectives import to_japanese_perspective
 
 
 class EvaluationManager:
@@ -66,20 +67,21 @@ class EvaluationManager:
             # Add Datasets to CustomDatasetMap
             # For each evaluation perspective
             for criterion in data["criteria"]:
+                criterion_name = to_japanese_perspective(criterion["criterion"])
                 # Get evaluation perspective id
                 perspective = db.query(EvaluationPerspective).filter_by(
-                    perspective_name=criterion["criterion"]).first()
+                    perspective_name=criterion_name).first()
 
                 # FIXME: It might be better to return an error if it doesn't exist
                 if not perspective:
                     # Create new evaluation perspective if it doesn't exist
                     perspective = EvaluationPerspective(
-                        perspective_name=criterion["criterion"])
+                        perspective_name=criterion_name)
                     db.add(perspective)
                     db.commit()
                     db.refresh(perspective)
                     logger.info(
-                        f"register_evaluation_from_json: 新規評価観点 '{criterion['criterion']}' を追加しました。")
+                        f"register_evaluation_from_json: 新規評価観点 '{criterion_name}' を追加しました。")
 
                 # If GSN is used for this perspective
                 use_gsn = criterion.get('use_gsn', False)

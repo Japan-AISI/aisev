@@ -7,9 +7,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from "vue";
 import Chart from "chart.js/auto";
-import { EvaluationCriteriaConst as EvaluationCriteriaJa } from "../constants/EvaluationCriteria";
-import { EvaluationCriteriaConst as EvaluationCriteriaEn } from "../constants/EvaluationCriteriaEn";
 import { useI18n } from "vue-i18n";
+import { getPerspectiveListByLocale } from "../utils/perspectiveMapping";
 
 const props = defineProps<{
   charts: Array<{ name: string; radarData: number[] }>;
@@ -20,13 +19,7 @@ let chartInstance: Chart | null = null;
 
 // i18n support: Switch label list based on language
 const { locale, t } = useI18n();
-const getLabels = () => {
-  if (locale.value === "en" || locale.value.startsWith("en")) {
-    return EvaluationCriteriaEn.LIST;
-  } else {
-    return EvaluationCriteriaJa.LIST;
-  }
-};
+const getLabels = () => getPerspectiveListByLocale(locale.value);
 
 // Added: Adjust label length based on window size
 function getResponsiveLabels() {
