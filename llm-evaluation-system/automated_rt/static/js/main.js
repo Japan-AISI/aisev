@@ -9,8 +9,10 @@ let adversarialPrompts = [];
 let uploadedDocuments = [];
 let evaluationSummary = null;
 const progressState = {
-    total: 0,
-    completed: 0,
+    totalSteps: 0,
+    completedSteps: 0,
+    totalPrompts: 0,
+    completedPrompts: 0,
     estimatedSeconds: null,
 };
 
@@ -177,7 +179,9 @@ const messages = {
             categoryResults: "カテゴリ別結果:",
             viewDetails: "詳細結果を表示",
             progress_head: "進捗状況: ",
-            progress_tail: " プロンプト完了",
+            progress_tail: " ステップ完了",
+            prompt_progress_head: "プロンプト進捗: ",
+            prompt_progress_tail: " プロンプト完了",
             estimatedTime: "推定残り時間: {{time}}",
             completed: "プロンプト完了",
             totalLabel: "総テスト数:",
@@ -321,7 +325,9 @@ const messages = {
             categoryResults: "Results by category:",
             viewDetails: "View detailed results",
             progress_head: "Progress: ",
-            progress_tail: " prompts completed",
+            progress_tail: " steps completed",
+            prompt_progress_head: "Prompt progress: ",
+            prompt_progress_tail: " prompts completed",
             estimatedTime: "Estimated remaining time: {{time}}",
             completed: "Prompts completed",
             totalLabel: "Total tests:",
@@ -1013,8 +1019,10 @@ async function saveLlmSetup() {
         adversarialPrompts = [];
         uploadedDocuments = [];
         evaluationSummary = null;
-        progressState.total = 0;
-        progressState.completed = 0;
+        progressState.totalSteps = 0;
+        progressState.completedSteps = 0;
+        progressState.totalPrompts = 0;
+        progressState.completedPrompts = 0;
         progressState.estimatedSeconds = null;
 
         renderUploadedDocuments();
@@ -1029,8 +1037,12 @@ async function saveLlmSetup() {
             progressBar.setAttribute('aria-valuenow', '0');
             progressBar.textContent = '0%';
         }
+        const completedStepsElement = document.getElementById('completedSteps');
+        const totalStepsElement = document.getElementById('totalSteps');
         const completedPromptsElement = document.getElementById('completedPrompts');
         const totalPromptsElement = document.getElementById('totalPrompts');
+        if (completedStepsElement) completedStepsElement.textContent = '0';
+        if (totalStepsElement) totalStepsElement.textContent = '0';
         if (completedPromptsElement) completedPromptsElement.textContent = '0';
         if (totalPromptsElement) totalPromptsElement.textContent = '0';
         const evaluationProgress = document.getElementById('evaluationProgress');
@@ -1338,98 +1350,157 @@ async function runEvaluation() {
         showToast(automatedRtI18n.t('toast.error'), automatedRtI18n.t('warnings.generateAdversarialFirst'), 'danger');
         return;
     }
-    
+
     // Display while evaluation
     const submitButton = document.querySelector('#evaluationForm button[type="submit"]');
     const originalButtonKey = submitButton.getAttribute('data-i18n');
     const originalButtonText = originalButtonKey ? automatedRtI18n.t(originalButtonKey) : submitButton.innerHTML;
     submitButton.disabled = true;
     submitButton.innerHTML = automatedRtI18n.t('buttons.running');
-    
+
     // Display progress bar
     document.getElementById('evaluationProgress').style.display = 'block';
-    
+
     // Initialize progress bar
     const progressBar = document.querySelector('#evaluationProgress .progress-bar');
     progressBar.style.width = '0%';
     progressBar.setAttribute('aria-valuenow', 0);
     progressBar.textContent = '0%';
-    
-    // Display number of prompts
+
+    const totalStepsElement = document.getElementById('totalSteps');
+    const completedStepsElement = document.getElementById('completedSteps');
     const totalPromptsElement = document.getElementById('totalPrompts');
     const completedPromptsElement = document.getElementById('completedPrompts');
+    totalStepsElement.textContent = '0';
+    completedStepsElement.textContent = '0';
     totalPromptsElement.textContent = adversarialPrompts.length;
     completedPromptsElement.textContent = '0';
-    progressState.total = adversarialPrompts.length;
-    progressState.completed = 0;
+
+    progressState.totalSteps = 0;
+    progressState.completedSteps = 0;
+    progressState.totalPrompts = adversarialPrompts.length;
+    progressState.completedPrompts = 0;
     progressState.estimatedSeconds = null;
     updateEstimatedTime();
-    
-    // Start time measurement
-    const startTime = new Date();
-    const estimatedTimeElement = document.getElementById('estimatedTimeRemaining');
-    
-    try {
-        // Call the evaluation execution API
-        const response = await axios.post('/evaluate_target_llm', {
-            session_id: currentSessionId,
-            auto_run: true, // Always execute all by default
-            language: getCurrentLanguage(),
-        });
-        
-        // Monitor progress with polling
-        let completed = 0;
-        const checkProgress = async () => {
-            try {
-                const progressResponse = await axios.get(`/evaluation_progress/${currentSessionId}/${completed}`);
-                const { progress, current_index, total } = progressResponse.data;
-                
-                // Update progress bar
-                progressBar.style.width = `${progress}%`;
-                progressBar.setAttribute('aria-valuenow', progress);
-                progressBar.textContent = `${progress}%`;
-                
-                // Update completion count
-                completed = current_index + 1;
-                completedPromptsElement.textContent = completed;
-                progressState.completed = completed;
-                progressState.total = total;
 
-                // Estimate remaining time
-                if (completed > 0 && total > 0) {
-                    const elapsedTime = (new Date() - startTime) / 1000; // seconds
-                    const timePerPrompt = elapsedTime / completed;
-                    const remainingPrompts = Math.max(0, total - completed);
-                    const estimatedTimeRemaining = Math.max(0, remainingPrompts * timePerPrompt);
-                    progressState.estimatedSeconds = estimatedTimeRemaining;
-                    updateEstimatedTime();
-                } else {
-                    progressState.estimatedSeconds = null;
-                    updateEstimatedTime();
-                }
-                
-                // If it is not complete, check again
-                if (completed < total) {
-                    setTimeout(checkProgress, 1000); // Check every second
-                } else {
-                    // Display results when evaluation is complete
-                    progressState.completed = total;
-                    progressState.estimatedSeconds = 0;
-                    updateEstimatedTime();
-                    showEvaluationResults(response.data);
-                }
-            } catch (error) {
-                console.error('進捗チェックエラー:', error);
-                // If an error occurs, wait a moment and check again
-                if (completed < total) {
-                    setTimeout(checkProgress, 2000);
-                }
+    const startTime = new Date();
+    let pollingActive = true;
+    let progressTimeoutId = null;
+
+    const applyProgressUpdate = (data) => {
+        if (!data) {
+            return;
+        }
+
+        const {
+            progress,
+            completed_steps: completedSteps,
+            total_steps: totalSteps,
+            completed_prompts: completedPrompts,
+            total_prompts: totalPrompts,
+        } = data;
+
+        const normalizedProgress = Number.isFinite(progress) ? Math.min(100, Math.max(0, progress)) : 0;
+        const roundedProgress = Math.round(normalizedProgress);
+        progressBar.style.width = `${normalizedProgress}%`;
+        progressBar.setAttribute('aria-valuenow', roundedProgress);
+        progressBar.textContent = `${roundedProgress}%`;
+
+        if (typeof completedSteps === 'number') {
+            completedStepsElement.textContent = completedSteps;
+            progressState.completedSteps = completedSteps;
+        }
+        if (typeof totalSteps === 'number') {
+            totalStepsElement.textContent = totalSteps;
+            progressState.totalSteps = totalSteps;
+        }
+        if (typeof completedPrompts === 'number') {
+            completedPromptsElement.textContent = completedPrompts;
+            progressState.completedPrompts = completedPrompts;
+        }
+        if (typeof totalPrompts === 'number') {
+            totalPromptsElement.textContent = totalPrompts;
+            progressState.totalPrompts = totalPrompts;
+        }
+
+        if (progressState.completedSteps > 0 && progressState.totalSteps > 0) {
+            const elapsedTime = (new Date() - startTime) / 1000;
+            const timePerStep = elapsedTime / progressState.completedSteps;
+            const remainingSteps = Math.max(0, progressState.totalSteps - progressState.completedSteps);
+            progressState.estimatedSeconds = Math.max(0, remainingSteps * timePerStep);
+        } else {
+            progressState.estimatedSeconds = null;
+        }
+
+        if (progressState.totalSteps > 0 && progressState.completedSteps >= progressState.totalSteps) {
+            progressState.estimatedSeconds = 0;
+        }
+
+        updateEstimatedTime();
+    };
+
+    const scheduleNextPoll = (delay) => {
+        if (!pollingActive) {
+            return;
+        }
+        progressTimeoutId = setTimeout(pollProgress, delay);
+    };
+
+    const pollProgress = async () => {
+        if (!pollingActive) {
+            return;
+        }
+        try {
+            const progressResponse = await axios.get(`/evaluation_progress/${currentSessionId}`);
+            applyProgressUpdate(progressResponse.data);
+
+            if (progressState.totalSteps > 0 && progressState.completedSteps >= progressState.totalSteps) {
+                pollingActive = false;
+                progressState.estimatedSeconds = 0;
+                updateEstimatedTime();
+                return;
             }
-        };
-        
-        // Start progress check
-        checkProgress();
+
+            scheduleNextPoll(1000);
+        } catch (error) {
+            console.error('進捗チェックエラー:', error);
+            if (pollingActive) {
+                scheduleNextPoll(2000);
+            }
+        }
+    };
+
+    const evaluationPromise = axios.post('/evaluate_target_llm', {
+        session_id: currentSessionId,
+        auto_run: true,
+        language: getCurrentLanguage(),
+    });
+
+    pollProgress();
+
+    try {
+        const response = await evaluationPromise;
+        pollingActive = false;
+        if (progressTimeoutId) {
+            clearTimeout(progressTimeoutId);
+        }
+
+        try {
+            const finalProgressResponse = await axios.get(`/evaluation_progress/${currentSessionId}`);
+            applyProgressUpdate(finalProgressResponse.data);
+        } catch (progressError) {
+            console.error('進捗最終取得エラー:', progressError);
+        }
+
+        progressState.estimatedSeconds = 0;
+        updateEstimatedTime();
+        showEvaluationResults(response.data);
     } catch (error) {
+        pollingActive = false;
+        if (progressTimeoutId) {
+            clearTimeout(progressTimeoutId);
+        }
+
         console.error('評価実行エラー:', error);
         showToast(
             automatedRtI18n.t('toast.error'),
@@ -1438,11 +1509,12 @@ async function runEvaluation() {
             }),
             'danger'
         );
-        
-        // Hide progress bar
+
         document.getElementById('evaluationProgress').style.display = 'none';
-        
-        // Reset button
+
+        progressState.estimatedSeconds = null;
+        updateEstimatedTime();
+
         submitButton.disabled = false;
         submitButton.innerHTML = originalButtonKey ? automatedRtI18n.t(originalButtonKey) : originalButtonText;
     }
