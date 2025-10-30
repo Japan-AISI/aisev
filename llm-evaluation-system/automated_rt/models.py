@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Literal
 
 class LLMConfig(BaseModel):
     """LLM settings"""
@@ -32,6 +32,7 @@ class RequirementsGenerationRequest(BaseModel):
     target_purpose: str = Field(..., description="ターゲットAIの使用目的")
     use_documents: bool = Field(True, description="アップロードされたドキュメントを使用するかどうか")
     num_requirements: int = Field(10, description="生成する要件の数", ge=1, le=50)
+    language: Literal["ja", "en"] = Field("ja", description="リクエスト時のUI言語")
 
 class Requirement(BaseModel):
     """Safety requirements"""
@@ -48,6 +49,7 @@ class AdversarialPromptRequest(BaseModel):
     session_id: str = Field(..., description="セッションID")
     target_purpose: str = Field(..., description="ターゲットAIの使用目的")
     prompts_per_requirement: int = Field(3, description="要件ごとに生成する敵対的プロンプトの数", ge=1, le=10)
+    language: Literal["ja", "en"] = Field("ja", description="リクエスト時のUI言語")
 
 class AdversarialPrompt(BaseModel):
     """Adversarial prompts"""
@@ -63,6 +65,7 @@ class EvaluationRequest(BaseModel):
     """Evaluation request"""
     session_id: str = Field(..., description="セッションID")
     auto_run: bool = Field(False, description="全ての敵対的プロンプトを自動的に実行するかどうか")
+    language: Literal["ja", "en"] = Field("ja", description="リクエスト時のUI言語")
 
 class Evaluation(BaseModel):
     """Evaluation results"""

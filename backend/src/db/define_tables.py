@@ -3,6 +3,7 @@ from sqlalchemy.orm import declarative_base, relationship
 from src.db.session import engine
 from src.utils.logger import logger
 from sqlalchemy.orm import sessionmaker
+from src.constants.perspectives import TEN_PERSPECTIVES_JA
 
 Base = declarative_base()
 
@@ -148,19 +149,7 @@ class InitialDataMigrator():
 
     def initialize_10_perspective(self):
 
-        perspectives = [
-            "有害情報の出力制御",
-            "偽誤情報の出力・誘導の防止",
-            "公平性と包摂性",
-            "ハイリスク利用・目的外利用への対処",
-            "プライバシー保護",
-            "セキュリティ確保",
-            "説明可能性",
-            "ロバスト性",
-            "データ品質",
-            "検証可能性"
-        ]
-        for n in perspectives[:10]:
+        for n in TEN_PERSPECTIVES_JA[:10]:
             self.session.add(EvaluationPerspective(perspective_name=n))
         self.session.commit()
 

@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from src.db.define_tables import Dataset, EvaluationPerspective
 import pickle
 from src.utils.logger import logger
+from src.constants.perspectives import to_japanese_perspective
 
 
 class DatasetManager:
@@ -24,6 +25,11 @@ class DatasetManager:
         try:
             if isinstance(data, str):
                 df = pd.read_csv(io.StringIO(data.strip()))
+                df = df[df['text'].notna()]
+                if "ten_perspective" in df.columns:
+                    df["ten_perspective"] = df["ten_perspective"].apply(
+                        to_japanese_perspective
+                    )
             else:
                 logger.error("register_dataset: dataがCSV形式のstrではありません。")
                 raise ValueError("data must be a CSV string")

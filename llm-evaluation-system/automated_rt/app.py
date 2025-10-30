@@ -34,7 +34,17 @@ from models import (
 )
 from results_manager import ResultsManager
 from html_exporter import setup_html_export_routes
-from prompts import REQUIREMENT_BASE_SYSTEM_PROMPT, REQUIREMENT_BASE_USER_PROMPT, ADVERSARIAL_BASE_SYSTEM_PROMPT, ADVERSARIAL_BASE_USER_PROMPT, EVALUATION_BASE_SYSTEM_PROMPT, EVALUATION_BASE_USER_PROMPT, TARGET_SAMPLE_SYSTEM_PROMPT
+from prompts import (
+    REQUIREMENT_BASE_SYSTEM_PROMPT,
+    REQUIREMENT_BASE_USER_PROMPT,
+    ADVERSARIAL_BASE_SYSTEM_PROMPT,
+    ADVERSARIAL_BASE_USER_PROMPT,
+    EVALUATION_BASE_SYSTEM_PROMPT,
+    EVALUATION_BASE_USER_PROMPT,
+    TARGET_SAMPLE_SYSTEM_PROMPTS,
+    TARGET_SAMPLE_SYSTEM_PROMPT,
+    ENGLISH_OUTPUT_NOTE,
+)
 
 
 MAX_CHAR_SIZE = 8000
@@ -63,6 +73,19 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # Session data
 sessions = {}
 
+
+def _ensure_language(language: Optional[str]) -> str:
+    return "en" if language == "en" else "ja"
+
+
+def _append_english_output_note(system_prompt: str, language: Optional[str]) -> str:
+    lang = _ensure_language(language)
+    if lang == "en" and ENGLISH_OUTPUT_NOTE not in system_prompt:
+        separator = "\n" if system_prompt and not system_prompt.endswith("\n") else ""
+        return f"{system_prompt}{separator}{ENGLISH_OUTPUT_NOTE}"
+    return system_prompt
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Display main page"""
@@ -72,6 +95,8 @@ async def index(request: Request):
         "adversarial_base_system_prompt": ADVERSARIAL_BASE_SYSTEM_PROMPT,
         "adversarial_base_user_prompt": ADVERSARIAL_BASE_USER_PROMPT,
         "target_sample_system_prompt": TARGET_SAMPLE_SYSTEM_PROMPT,
+        "target_sample_system_prompt_ja": TARGET_SAMPLE_SYSTEM_PROMPTS["ja"],
+        "target_sample_system_prompt_en": TARGET_SAMPLE_SYSTEM_PROMPTS["en"],
         "default_requirement_model": DEFAULT_REQUIREMENT_MODEL,
         "default_adversarial_model": DEFAULT_ADVERSARIAL_MODEL,
         "default_evaluation_model": DEFAULT_EVALUATION_MODEL,
@@ -129,6 +154,7 @@ async def generate_requirements(request: RequirementsGenerationRequest):
         raise HTTPException(status_code=404, detail="セッションが見つかりません")
     
     session = sessions[request.session_id]
+    language = _ensure_language(getattr(request, "language", "ja"))
     
     # Initialize LLM client by selecting the appropriate client based on the provider
     llm_client = _create_llm_client(session["requirements_llm"])
@@ -153,6 +179,8 @@ async def generate_requirements(request: RequirementsGenerationRequest):
         system_prompt = base_system_prompt + "\n\n追加指示：\n" + custom_prompt
     else:
         system_prompt = base_system_prompt
+
+    system_prompt = _append_english_output_note(system_prompt, language)
     
     # Default user prompt template
     default_user_prompt_template = REQUIREMENT_BASE_USER_PROMPT
@@ -212,7 +240,8 @@ async def generate_adversarial_prompts(request: AdversarialPromptRequest):
         raise HTTPException(status_code=404, detail="セッションが見つかりません")
     
     session = sessions[request.session_id]
-    
+    language = _ensure_language(getattr(request, "language", "ja"))
+
     if not session["requirements"]:
         raise HTTPException(status_code=400, detail="先に要件を生成してください")
     
@@ -235,6 +264,8 @@ async def generate_adversarial_prompts(request: AdversarialPromptRequest):
             system_prompt = base_system_prompt + "\n\n追加指示：\n" + custom_prompt
         else:
             system_prompt = base_system_prompt
+
+        system_prompt = _append_english_output_note(system_prompt, language)
         
         # Generate the specified number of prompts
         prompts_per_requirement = int(request.prompts_per_requirement)
@@ -410,7 +441,7 @@ async def export_adversarial_prompts(session_id: str):
     filename = f"adversarial_prompts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
     return Response(
-        content=csv_content.encode('utf-8-sig'),
+        content=csv_content.encode('utf-8'),
         media_type="text/csv",
         headers={
             "Content-Disposition": f"attachment; filename=\"{filename}\""
@@ -429,9 +460,10 @@ async def evaluate_target_llm(request: EvaluationRequest):
     """Evaluate target AI"""
     if request.session_id not in sessions:
         raise HTTPException(status_code=404, detail="セッションが見つかりません")
-    
+
     session = sessions[request.session_id]
-    
+    language = _ensure_language(getattr(request, "language", "ja"))
+
     if not session["adversarial_prompts"]:
         raise HTTPException(status_code=400, detail="先に敵対的プロンプトを生成してください")
     
@@ -442,12 +474,55 @@ async def evaluate_target_llm(request: EvaluationRequest):
     eval_llm = _create_llm_client(session["evaluation_llm"])
     
     results = []
-    total_prompts = len(session["adversarial_prompts"])
-    
+    prompts = session["adversarial_prompts"]
+    total_prompts = len(prompts)
+
+    prompt_step_counts = [1 if prompt.get("error", False) else 3 for prompt in prompts]
+    total_steps = sum(prompt_step_counts)
+
+    session["evaluation_progress"] = {
+        "total_steps": total_steps,
+        "completed_steps": 0,
+        "completed_prompts": 0,
+        "total_prompts": total_prompts,
+        "current_prompt_index": None,
+        "current_step_description": None,
+        "last_update": datetime.now().isoformat(),
+    }
+
+    def record_progress(step_increment=0, prompt_index=None, description=None, prompt_completed=False):
+        progress = session.get("evaluation_progress")
+        if not progress:
+            return
+
+        total_steps_local = progress.get("total_steps") or 0
+        completed_steps_local = progress.get("completed_steps") or 0
+
+        if step_increment:
+            if total_steps_local > 0:
+                progress["completed_steps"] = min(completed_steps_local + step_increment, total_steps_local)
+            else:
+                progress["completed_steps"] = completed_steps_local + step_increment
+
+        if prompt_index is not None:
+            progress["current_prompt_index"] = prompt_index
+
+        if description is not None:
+            progress["current_step_description"] = description
+
+        if prompt_completed:
+            if prompt_index is not None:
+                progress["completed_prompts"] = max(progress.get("completed_prompts", 0), prompt_index + 1)
+            else:
+                progress["completed_prompts"] = progress.get("total_prompts", progress.get("completed_prompts", 0))
+
+        progress["last_update"] = datetime.now().isoformat()
+
     # Test target AI with each adversarial prompt
-    for i, prompt_data in enumerate(session["adversarial_prompts"]):
+    for i, prompt_data in enumerate(prompts):
+        record_progress(prompt_index=i, description="preparing_prompt")
         adversarial_prompt = prompt_data["prompt"]
-        
+
         # Fixed: Prompts with error flags will be skipped
         if prompt_data.get("error", False):
             logger.info(f"プロンプト {i+1}/{total_prompts} はエラーフラグがありスキップします: {adversarial_prompt[:50]}...")
@@ -465,28 +540,51 @@ async def evaluate_target_llm(request: EvaluationRequest):
                 }
             }
             results.append(result)
+            record_progress(
+                step_increment=prompt_step_counts[i],
+                prompt_index=i,
+                description="skipped_prompt",
+                prompt_completed=True
+            )
             continue
-        
+
         logger.info(f"プロンプト {i+1}/{total_prompts} を評価中: {adversarial_prompt[:50]}...")
-        
+
         # Send adversarial prompts to target AI
-        target_response = await target_llm.generate("あなたは役立つAIアシスタントです。", adversarial_prompt)
-        
+        target_system_prompt = session["target_llm"].system_prompt
+        if not target_system_prompt:
+            target_system_prompt = TARGET_SAMPLE_SYSTEM_PROMPTS.get(language, TARGET_SAMPLE_SYSTEM_PROMPTS["ja"])
+        target_system_prompt = _append_english_output_note(target_system_prompt, language)
+
+        record_progress(prompt_index=i, description="request_target_llm")
+        target_response = ""
+        try:
+            target_response = await target_llm.generate(target_system_prompt, adversarial_prompt)
+        finally:
+            record_progress(step_increment=1, prompt_index=i, description="target_response_received")
+
         # Preparing system prompts (base prompts + user custom prompts)
         base_system_prompt = EVALUATION_BASE_SYSTEM_PROMPT
-        
+
         # Add user custom prompts if available
         custom_prompt = session["evaluation_llm"].system_prompt
         if custom_prompt:
             system_prompt = base_system_prompt + "\n\n追加指示：\n" + custom_prompt
         else:
             system_prompt = base_system_prompt
-        
+
+        system_prompt = _append_english_output_note(system_prompt, language)
+
         user_prompt = EVALUATION_BASE_USER_PROMPT % {"category": prompt_data["category"], "requirement": prompt_data["requirement"], "adversarial": adversarial_prompt, "response": target_response}
-        
+
         try:
-            eval_response = await eval_llm.generate(system_prompt, user_prompt)
-            
+            record_progress(prompt_index=i, description="request_evaluation_llm")
+            eval_response = ""
+            try:
+                eval_response = await eval_llm.generate(system_prompt, user_prompt)
+            finally:
+                record_progress(step_increment=1, prompt_index=i, description="evaluation_response_received")
+
             try:
                 # Parse JSON response
                 try:
@@ -531,6 +629,7 @@ async def evaluate_target_llm(request: EvaluationRequest):
                     "evaluation": evaluation
                 }
                 results.append(result)
+                record_progress(step_increment=1, prompt_index=i, description="prompt_completed", prompt_completed=True)
             except json.JSONDecodeError as e:
                 # If JSON parsing fails
                 print(f"評価レスポンスのパースに失敗: {e}")
@@ -547,6 +646,7 @@ async def evaluate_target_llm(request: EvaluationRequest):
                     }
                 }
                 results.append(result)
+                record_progress(step_increment=1, prompt_index=i, description="prompt_completed_with_parse_error", prompt_completed=True)
         except Exception as e:
             print(f"評価中のエラー: {e}")
             result = {
@@ -561,10 +661,11 @@ async def evaluate_target_llm(request: EvaluationRequest):
                 }
             }
             results.append(result)
-    
+            record_progress(step_increment=1, prompt_index=i, description="prompt_completed_with_error", prompt_completed=True)
+
     # Save evaluation results to the session
     sessions[request.session_id]["evaluation_results"] = results
-    
+
     # Save to a results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     result_file = os.path.join(RESULTS_DIR, f"evaluation_{request.session_id}_{timestamp}.json")
@@ -615,39 +716,52 @@ async def evaluate_target_llm(request: EvaluationRequest):
         "category_stats": category_stats,
         "result_file": result_file
     }
-    
+
+    progress_data = session.get("evaluation_progress")
+    if progress_data:
+        total_steps = progress_data.get("total_steps")
+        if total_steps is not None:
+            progress_data["completed_steps"] = total_steps
+        progress_data["completed_prompts"] = progress_data.get("total_prompts", len(results))
+        progress_data["current_step_description"] = "completed"
+        progress_data["last_update"] = datetime.now().isoformat()
+
     return {
         "summary": summary,
         "results": results
     }
 
-@app.get("/evaluation_progress/{session_id}/{prompt_index}")
-async def get_evaluation_progress(session_id: str, prompt_index: int):
+@app.get("/evaluation_progress/{session_id}")
+async def get_evaluation_progress(session_id: str):
     """Get evaluation progress"""
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="セッションが見つかりません")
-    
+
     session = sessions[session_id]
-    
+
     if not session["adversarial_prompts"]:
         raise HTTPException(status_code=400, detail="敵対的プロンプトが見つかりません")
-    
-    total_prompts = len(session["adversarial_prompts"])
-    
-    if int(prompt_index) >= total_prompts:
-        prompt_index = total_prompts - 1
-    
-    # Current prompt information
-    current_prompt = session["adversarial_prompts"][int(prompt_index)]
-    
-    # Calclation of progress rate
-    progress = round((int(prompt_index) + 1) / total_prompts * 100)
-    
+
+    progress_data = session.get("evaluation_progress") or {}
+
+    total_prompts = progress_data.get("total_prompts") or len(session["adversarial_prompts"])
+    total_steps = progress_data.get("total_steps") or 0
+    completed_steps = progress_data.get("completed_steps") or 0
+
+    if total_steps > 0:
+        progress_percentage = round(completed_steps / total_steps * 100)
+    else:
+        progress_percentage = 0
+
     return {
-        "progress": progress,
-        "current_index": int(prompt_index),
-        "total": total_prompts,
-        "current_prompt": current_prompt
+        "progress": progress_percentage,
+        "completed_steps": completed_steps,
+        "total_steps": total_steps,
+        "completed_prompts": progress_data.get("completed_prompts", 0),
+        "total_prompts": total_prompts,
+        "current_prompt_index": progress_data.get("current_prompt_index"),
+        "current_step_description": progress_data.get("current_step_description"),
+        "last_update": progress_data.get("last_update"),
     }
 
 @app.get("/results/{session_id}", response_class=HTMLResponse)
