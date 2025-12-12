@@ -103,6 +103,7 @@ const evaluationId = ref(
 );
 const resultId = ref(route.params.resultId || route.query.resultId || "");
 const modelId = ref(route.params.modelId || route.query.modelId || "");
+const judgeModelId = ref(route.params.judgeModelId || route.query.judgeModelId || "");
 import { useI18n } from "vue-i18n";
 
 const { t, locale } = useI18n();
@@ -126,7 +127,7 @@ const execQuantitativeEvaluation = async () => {
   const requestJson = {
     evaluation_id: evaluationId.value,
     target_ai_model_id: modelId.value,
-    evaluator_ai_model_id: modelId.value, // Use the same model
+    evaluator_ai_model_id: judgeModelId.value,
   };
   console.log(
     "execQuantitativeEvaluation request:",
