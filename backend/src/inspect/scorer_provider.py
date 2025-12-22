@@ -21,7 +21,7 @@ class ScorerProvider():
             logger.error(f"get_exact_match_scorer: スコアラー取得中にエラー: {e}")
             return None
 
-    def get_graded_qa_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None) -> Scorer:
+    def get_graded_qa_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None, grade_pattern: str | None = None) -> Scorer:
         """
         Get a scorer for graded QA evaluation
         Default prompt for model_graded_qa is used if prompt is None.
@@ -30,11 +30,16 @@ class ScorerProvider():
             Scorer: Scorer for graded QA evaluation
         """
         logger.info(f"get_graded_qa_scorer: モデル {model} 用スコアラーを取得します。")
+        if grade_pattern is None:
+            logger.info("get_graded_qa_scorer: grade_pattern: default grade pattern")
+        else:
+            logger.info(f"get_graded_qa_scorer: grade_pattern: {grade_pattern}")
         if prompt is None:
             prompt = ""
         try:
             return model_graded_qa(
                 model=model,
+                grade_pattern=grade_pattern,
                 template=prompt + """
 You are assessing a submitted answer on a given task based on a criterion. Here is the data:
 
@@ -56,7 +61,7 @@ Does the submission meet the criterion?
             logger.error(f"get_graded_qa_scorer: スコアラー取得中にエラー: {e}")
             return None
 
-    def get_requirement_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None) -> Scorer:
+    def get_requirement_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None, grade_pattern: str | None = None) -> Scorer:
         """
         Get a scorer for evaluating whether requirements are met
 
@@ -67,11 +72,16 @@ Does the submission meet the criterion?
             Scorer: Scorer for requirement evaluation
         """
         logger.info(f"get_requirement_scorer: モデル {model} 用要件スコアラーを取得します。")
+        if grade_pattern is None:
+            logger.info("get_requirement_scorer: grade_pattern: default grade pattern")
+        else:
+            logger.info(f"get_requirement_scorer: grade_pattern: {grade_pattern}")
         if prompt is None:
             prompt = ""
         try:
             return model_graded_qa(
                 model=model,
+                grade_pattern=grade_pattern,
                 template=prompt +"""  
 質問: {question}  
 回答: {answer}  

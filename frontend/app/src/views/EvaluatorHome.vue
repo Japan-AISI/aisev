@@ -155,6 +155,7 @@ async function runEvaluation() {
         resultId: resultId,
         evaluationId: selectedDefinition.value,
         modelId: selectedTargetAI.value,
+        judgeModelId: selectedJudgeAI.value,
       },
     });
   } catch (err) {
