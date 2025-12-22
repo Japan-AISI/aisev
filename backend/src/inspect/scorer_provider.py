@@ -30,6 +30,10 @@ class ScorerProvider():
             Scorer: Scorer for graded QA evaluation
         """
         logger.info(f"get_graded_qa_scorer: モデル {model} 用スコアラーを取得します。")
+        if grade_pattern is None:
+            logger.info("get_graded_qa_scorer: grade_pattern: default grade pattern")
+        else:
+            logger.info(f"get_graded_qa_scorer: grade_pattern: {grade_pattern}")
         if prompt is None:
             prompt = ""
         try:
@@ -68,6 +72,10 @@ Does the submission meet the criterion?
             Scorer: Scorer for requirement evaluation
         """
         logger.info(f"get_requirement_scorer: モデル {model} 用要件スコアラーを取得します。")
+        if grade_pattern is None:
+            logger.info("get_requirement_scorer: grade_pattern: default grade pattern")
+        else:
+            logger.info(f"get_requirement_scorer: grade_pattern: {grade_pattern}")
         if prompt is None:
             prompt = ""
         try:
