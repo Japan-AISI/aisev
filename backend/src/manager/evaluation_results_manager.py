@@ -146,18 +146,20 @@ class EvaluationResultsManager:
 
         scorer_provider = ScorerProvider()
 
+        grade_pattern = r"(?i)GRADE\s*:\s*([CPI])(.*)"
+
         # Select ScorerProvider method from scorer name
         if scorer_name == "exact":
             return scorer_provider.get_exact_match_scorer(prompt=prompt)
         elif scorer_name == "model_graded_qa":
-            return scorer_provider.get_graded_qa_scorer(model=model, prompt=prompt)
+            return scorer_provider.get_graded_qa_scorer(model=model, prompt=prompt, grade_pattern=grade_pattern)
         elif scorer_name == "requirement":
-            return scorer_provider.get_requirement_scorer(model=model, prompt=prompt)
+            return scorer_provider.get_requirement_scorer(model=model, prompt=prompt, grade_pattern=grade_pattern)
         elif scorer_name == "multiple_choice" or scorer_name == "choice":
             return scorer_provider.get_multiple_choice_scorer(prompt=prompt)
         else:
             # Default is model_graded_qa
-            return scorer_provider.get_graded_qa_scorer(model=model, prompt=prompt)
+            return scorer_provider.get_graded_qa_scorer(model=model, prompt=prompt, grade_pattern=grade_pattern)
 
     @staticmethod
     def register_quantitative_result(db: Session, eval_result_id: int, dataset_ids: list[int], target_model_id: int, eval_model_id: int, use_gsn: UseGSN | None = None) -> int:
@@ -297,10 +299,8 @@ class EvaluationResultsManager:
                         results[perspective] = result
             else:
                 # If no scorer column, use default scorer
-                from src.inspect.scorer_provider import ScorerProvider
-                scorer_provider = ScorerProvider()
-                scorer = scorer_provider.get_graded_qa_scorer(
-                    model=eval_model_name)
+                scorer = EvaluationResultsManager.get_scorer(
+                    "model_graded_qa", model=eval_model_name, prompt=prompt)
                 results = new_eval_by_ten_perspective(
                     df, target_model_name=target_model_name, scorer=scorer, eval_type="default")
             eval_result.quantitative_results = results

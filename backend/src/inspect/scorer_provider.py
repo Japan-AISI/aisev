@@ -21,7 +21,7 @@ class ScorerProvider():
             logger.error(f"get_exact_match_scorer: スコアラー取得中にエラー: {e}")
             return None
 
-    def get_graded_qa_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None) -> Scorer:
+    def get_graded_qa_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None, grade_pattern: str | None = None) -> Scorer:
         """
         Get a scorer for graded QA evaluation
         Default prompt for model_graded_qa is used if prompt is None.
@@ -35,6 +35,7 @@ class ScorerProvider():
         try:
             return model_graded_qa(
                 model=model,
+                grade_pattern=grade_pattern,
                 template=prompt + """
 You are assessing a submitted answer on a given task based on a criterion. Here is the data:
 
@@ -56,7 +57,7 @@ Does the submission meet the criterion?
             logger.error(f"get_graded_qa_scorer: スコアラー取得中にエラー: {e}")
             return None
 
-    def get_requirement_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None) -> Scorer:
+    def get_requirement_scorer(self, model: str = "openai/gpt-4o", prompt: str | None = None, grade_pattern: str | None = None) -> Scorer:
         """
         Get a scorer for evaluating whether requirements are met
 
@@ -72,6 +73,7 @@ Does the submission meet the criterion?
         try:
             return model_graded_qa(
                 model=model,
+                grade_pattern=grade_pattern,
                 template=prompt +"""  
 質問: {question}  
 回答: {answer}  
