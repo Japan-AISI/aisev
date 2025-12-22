@@ -1,4 +1,6 @@
 from datetime import date, datetime
+import importlib.util
+from pathlib import Path
 from src.db.define_tables import EvaluationResult, Dataset, AIModel, Evaluation, AIModel, UseGSN
 from sqlalchemy.orm import Session
 from src.utils.logger import logger
@@ -146,7 +148,17 @@ class EvaluationResultsManager:
 
         scorer_provider = ScorerProvider()
 
-        grade_pattern = r"(?i)GRADE\s*:\s*([CPI])(.*)"
+        grade_pattern = None
+        config_path = Path(__file__).resolve().parents[1] / "constants" / "config.py"
+
+        if config_path.is_file():
+            spec = importlib.util.spec_from_file_location(
+                "src.constants.config", config_path)
+
+            if spec and spec.loader:
+                config = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(config)
+                grade_pattern = getattr(config, "GRADE_PATTERN", None)
 
         # Select ScorerProvider method from scorer name
         if scorer_name == "exact":
