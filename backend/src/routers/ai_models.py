@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from sqlalchemy.orm import Session
 from src.db.session import get_db
 from src.manager.ai_model_manager import AIModelManager
@@ -7,15 +8,51 @@ from src.utils.logger import logger
 router = APIRouter()
 
 @router.get("/ai_models")
-def list_ai_models(db: Session = Depends(get_db)):
-    logger.info("list_ai_models: AIモデル一覧取得処理を開始します。")
+def list_ai_models(
+    project_key: Optional[str] = Query(None),
+    api_key: Optional[str] = Query(None),
+    gpt_profile_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Get AI models.
+    - No query params → return all models
+    - With credentials → return filtered models
+    """
+    logger.info(
+        "list_ai_models: project_key=%s, api_key=%s, gpt_profile_id=%s",
+        project_key,
+        api_key,
+        gpt_profile_id,
+    )
+
     try:
-        models = AIModelManager.get_all_models(db)
-        logger.info(f"list_ai_models: {len(models)}件のAIモデルを取得しました。")
-        return {"ai_models": [
-            {"id": m.id, "name": m.name, "model_name": m.model_name, "url": m.url, "apiKey": m.api_key, "promptFormat": m.api_request_format, "type": m.type}
-            for m in models
-        ]}
+        models = AIModelManager.get_all_models(
+            db=db,
+            project_key=project_key,
+            api_key=api_key,
+            gpt_profile_id=gpt_profile_id,
+        )
+
+        if not models:
+            logger.info("list_ai_models: AIModels not found.")
+            raise HTTPException(status_code=404, detail="AIModels not found")
+
+        return {
+            "ai_models": [
+                {
+                    "id": m.id,
+                    "name": m.name,
+                    "model_name": m.model_name,
+                    "url": m.url,
+                    "promptFormat": m.api_request_format,
+                    "type": m.type,
+                }
+                for m in models
+            ]
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"list_ai_models: 取得処理中にエラーが発生しました: {e}")
         raise HTTPException(status_code=500, detail="AIモデル一覧の取得中にエラーが発生しました。")
@@ -29,7 +66,16 @@ def get_ai_model(model_id: int, db: Session = Depends(get_db)):
             logger.info(f"get_ai_model: ID={model_id} のAIモデルは見つかりませんでした。")
             raise HTTPException(status_code=404, detail="AIModel not found")
         logger.info(f"get_ai_model: AIモデル {model.name} を取得しました。")
-        return {"ai_model": {"id": model.id, "name": model.name, "model_name": model.model_name, "url": model.url, "apiKey": model.api_key, "promptFormat": model.api_request_format, "type": model.type}}
+        return {
+            "ai_model": {
+                "id": model.id,
+                "name": model.name,
+                "model_name": model.model_name,
+                "url": model.url,
+                "promptFormat": model.api_request_format,
+                "type": model.type,
+            }
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -40,6 +86,8 @@ def get_ai_model(model_id: int, db: Session = Depends(get_db)):
 async def create_ai_model(request: Request, db: Session = Depends(get_db)):
     logger.info("create_ai_model: AIモデル追加リクエストの処理を開始します。")
     body = await request.json()
+    if "projectKey" in body:
+        body["project_key"] = body.pop("projectKey")
     if "apiKey" in body:
         body["api_key"] = body.pop("apiKey")
     if "promptFormat" in body:
@@ -47,7 +95,16 @@ async def create_ai_model(request: Request, db: Session = Depends(get_db)):
     try:
         model = AIModelManager.add_model(db, body)
         logger.info(f"create_ai_model: AIモデル {model.name} の追加が完了しました。")
-        return {"ai_model": {"id": model.id, "name": model.name, "model_name": model.model_name, "url": model.url, "apiKey": model.api_key, "promptFormat": model.api_request_format, "type": model.type}}
+        return {
+            "ai_model": {
+                "id": model.id,
+                "name": model.name,
+                "model_name": model.model_name,
+                "url": model.url,
+                "promptFormat": model.api_request_format,
+                "type": model.type,
+            }
+        }
     except ValueError as e:
         logger.error(f"create_ai_model: バリデーションエラー: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -59,6 +116,8 @@ async def create_ai_model(request: Request, db: Session = Depends(get_db)):
 async def update_ai_model(model_id: int, request: Request, db: Session = Depends(get_db)):
     logger.info(f"update_ai_model: ID={model_id} のAIモデル更新リクエストの処理を開始します。")
     body = await request.json()
+    if "projectKey" in body:
+        body["project_key"] = body.pop("projectKey")
     if "apiKey" in body:
         body["api_key"] = body.pop("apiKey")
     if "promptFormat" in body:
@@ -69,7 +128,16 @@ async def update_ai_model(model_id: int, request: Request, db: Session = Depends
             logger.info(f"update_ai_model: ID={model_id} のAIモデルは見つかりませんでした。")
             raise HTTPException(status_code=404, detail="AIModel not found")
         logger.info(f"update_ai_model: AIモデル {model.name} の更新が完了しました。")
-        return {"ai_model": {"id": model.id, "name": model.name, "model_name": model.model_name, "url": model.url, "apiKey": model.api_key, "promptFormat": model.api_request_format, "type": model.type}}
+        return {
+            "ai_model": {
+                "id": model.id,
+                "name": model.name,
+                "model_name": model.model_name,
+                "url": model.url,
+                "promptFormat": model.api_request_format,
+                "type": model.type,
+            }
+        }
     except HTTPException:
         raise
     except Exception as e:

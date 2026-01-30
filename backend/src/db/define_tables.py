@@ -77,6 +77,7 @@ class AIModel(Base):
     name = Column(String)
     model_name = Column(String)
     url = Column(String)
+    project_key = Column(String)
     api_key = Column(String)
     api_request_format = Column(JSON)
     type = Column(String)  # "target/eval/both"
@@ -87,7 +88,7 @@ class AIModel(Base):
         "EvaluationResult", back_populates="evaluator_ai_model", foreign_keys='EvaluationResult.evaluator_ai_model_id')
 
     def __repr__(self):
-        return f"<AIModel(id={self.id}, name={self.name}, model_name={self.model_name}, url={self.url}, api_key={self.api_key}, api_request_format={self.api_request_format}, type={self.type})>"
+        return f"<AIModel(id={self.id}, name={self.name}, model_name={self.model_name}, url={self.url}, api_request_format={self.api_request_format}, type={self.type})>"
 
 
 class Evaluation(Base):

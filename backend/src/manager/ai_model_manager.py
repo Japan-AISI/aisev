@@ -1,3 +1,5 @@
+from typing import List, Optional
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from src.db.define_tables import AIModel
 from src.utils.logger import logger
@@ -28,6 +30,7 @@ class AIModelManager:
                 name=data.get("name"),
                 model_name=data.get("model_name"),
                 url=data.get("url"),
+                project_key=data.get("project_key"),
                 api_key=data.get("api_key"),
                 api_request_format=data.get("api_request_format"),
                 type=model_type
@@ -63,15 +66,44 @@ class AIModelManager:
             return None
 
     @staticmethod
-    def get_all_models(db: Session):
+    def get_all_models(
+        db: Session,
+        project_key: Optional[str] = None,
+        api_key: Optional[str] = None,
+        gpt_profile_id: Optional[str] = None,
+    ) -> List[AIModel]:
         """
         Get all AI models
-        :param db: SQLAlchemy Session
-        :return: List[AIModel]
+        - If no filters are provided → return all models
+        - If filters are provided → apply them conditionally
         """
-        logger.info("get_all_models: すべてのAIモデル取得を開始します。")
+        logger.info(
+            "get_all_models: project_key=%s, api_key=%s, gpt_profile_id=%s",
+            project_key,
+            api_key,
+            gpt_profile_id,
+        )
+
         try:
-            models = db.query(AIModel).all()
+            query = db.query(AIModel)
+
+            # Apply filters only if provided
+            if api_key:
+                query = query.filter(AIModel.api_key == api_key)
+
+            if project_key:
+                query = query.filter(AIModel.project_key == project_key)
+
+            if gpt_profile_id:
+                query = query.filter(
+                    func.json_extract_path_text(
+                        AIModel.api_request_format,
+                        "gpt_profile_id",
+                    )
+                    == gpt_profile_id
+                )
+
+            models = query.all()
             logger.info(f"get_all_models: {len(models)}件のAIモデルを取得しました。")
             return models
         except Exception as e:
@@ -127,4 +159,3 @@ class AIModelManager:
             logger.error(f"delete_model: 削除処理中にエラーが発生しました: {e}")
             db.rollback()
             return False
-            

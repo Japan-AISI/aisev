@@ -1,8 +1,10 @@
 from datetime import date, datetime
 import importlib.util
 from pathlib import Path
+from typing import Optional
 from src.db.define_tables import EvaluationResult, Dataset, AIModel, Evaluation, AIModel, UseGSN
 from sqlalchemy.orm import Session
+from sqlalchemy import and_, func
 from src.utils.logger import logger
 from src.gsn.register_dataset_for_gsn import RegisterDatasetForGSN
 from src.manager.quantitative_dataset_manager import QuantitativeDatasetService
@@ -12,7 +14,12 @@ import pandas as pd
 
 class EvaluationResultsManager:
     @staticmethod
-    def get_all_evaluation_results(db: Session) -> list[EvaluationResult]:
+    def get_all_evaluation_results(
+        db: Session,
+        project_key: Optional[str] = None,
+        api_key: Optional[str] = None,
+        gpt_profile_id: Optional[str] = None,
+    ) -> list[EvaluationResult]:
         """
         Get all EvaluationResults
         evaluation_id -> Join with Evaluation to get name
@@ -24,11 +31,39 @@ class EvaluationResultsManager:
         TargetAIModel = aliased(AIModel)
         EvaluatorAIModel = aliased(AIModel)
         try:
-            evaluation_results = db.query(EvaluationResult).\
-                join(EvaluationResult.evaluation).\
-                join(TargetAIModel, TargetAIModel.id == EvaluationResult.target_ai_model_id).\
-                join(EvaluatorAIModel, EvaluatorAIModel.id ==
-                     EvaluationResult.evaluator_ai_model_id).all()
+            query = (
+                db.query(EvaluationResult)
+                .join(EvaluationResult.evaluation)
+                .join(
+                    TargetAIModel,
+                    TargetAIModel.id == EvaluationResult.target_ai_model_id,
+                )
+                .join(
+                    EvaluatorAIModel,
+                    EvaluatorAIModel.id == EvaluationResult.evaluator_ai_model_id,
+                )
+            )
+
+            filters = []
+
+            if project_key is not None:
+                filters.append(TargetAIModel.project_key == project_key)
+
+            if api_key is not None:
+                filters.append(TargetAIModel.api_key == api_key)
+
+            if gpt_profile_id is not None:
+                filters.append(
+                    func.json_extract_path_text(
+                        TargetAIModel.api_request_format, "gpt_profile_id"
+                    )
+                    == gpt_profile_id
+                )
+
+            if filters:
+                query = query.filter(and_(*filters))
+
+            evaluation_results = query.all()
 
             required_response = [{
                 "id": result.id,
@@ -182,6 +217,7 @@ class EvaluationResultsManager:
             f"register_quantitative_result: ID={eval_result_id} の定量評価登録を開始します。")
         from src.inspect.eval_datasets import new_eval_by_ten_perspective
         from src.inspect.inspect_common import register_in_inspect_ai
+        from src.inspect.inspect_maira import register_in_inspect_maira_ai
         import pickle
         from inspect_ai.scorer import model_graded_qa
         from src.manager.dataset_manager import DatasetManager
@@ -266,18 +302,40 @@ class EvaluationResultsManager:
 
         # add model to inspect_ai.
         # NOTE: target_model is for answer generation, eval_model is for scoring
-        target_model_alias = register_in_inspect_ai(
-            model_name=target_model.model_name,
-            api_url=target_model.url,
-            api_key=target_model.api_key
-        )
+        if "maira" in target_model.model_name.lower():
+            # maira
+            target_model_alias = register_in_inspect_maira_ai(
+                alias=f"gigalogy-{target_model.model_name}",
+                url=target_model.url,
+                project_key=target_model.project_key,
+                api_key=target_model.api_key,
+                defaults=getattr(target_model, "api_request_format", {}),
+            )
+        else:
+            # Standard
+            target_model_alias = register_in_inspect_ai(
+                model_name=target_model.model_name,
+                api_url=target_model.url,
+                api_key=target_model.api_key,
+            )
         target_model_name = f"{target_model_alias}/{target_model.model_name}"
 
-        eval_model_alias = register_in_inspect_ai(
-            model_name=eval_model.model_name,
-            api_url=eval_model.url,
-            api_key=eval_model.api_key
-        )
+        if "maira" in eval_model.model_name.lower():
+            # maira
+            eval_model_alias = register_in_inspect_maira_ai(
+                alias=f"gigalogy-{eval_model.model_name}",
+                url=eval_model.url,
+                project_key=eval_model.project_key,
+                api_key=eval_model.api_key,
+                defaults=getattr(eval_model, "api_request_format", {}),
+            )
+        else:
+            # Standard
+            eval_model_alias = register_in_inspect_ai(
+                model_name=eval_model.model_name,
+                api_url=eval_model.url,
+                api_key=eval_model.api_key,
+            )
         eval_model_name = f"{eval_model_alias}/{eval_model.model_name}"
 
         logger.info(f"Target model: {target_model_name}")

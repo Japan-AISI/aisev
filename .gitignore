@@ -1,0 +1,12 @@
+.DS_Store
+.spyproject
+.zip
+*.vscode
+.idea
+*.log
+.db
+__pycache__
+.env
+venv
+backend/logs/inspect_ai/*
+logs/*

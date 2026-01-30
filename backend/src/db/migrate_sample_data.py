@@ -2,7 +2,9 @@
 Sample data insertion script based on DB table definitions.
 Data insertion is separated by making it a function for easy testing.
 """
+import asyncio
 from datetime import date, datetime
+from src.manager.evaluation_manager import EvaluationManager
 from src.db.define_tables import (
     Base, Dataset, CustomDatasets, EvaluationPerspective, DatasetCustomMapping,
     AIModel, EvaluationResult, Evaluation
@@ -15,6 +17,7 @@ from src.db.define_tables import UseGSN, Evaluation, EvaluationPerspective
 from pathlib import Path
 import pandas as pd
 from src.gsn.register_dataset_for_gsn import RegisterDatasetForGSN
+from src.utils.gn_data import PRESET_EVALUATION_JSON
 
 Session = sessionmaker(bind=engine)
 
@@ -160,6 +163,26 @@ def initialize_evaluation_perspectives():
     finally:
         session.close()
 
+def create_preset_evaluation_definitions():
+    """
+    Function to create preset evaluation definitions.
+    """
+    session = Session()
+    try:
+        # Run the async function synchronously
+        evaluation = asyncio.run(
+            EvaluationManager(session).register_evaluation_from_json(
+                PRESET_EVALUATION_JSON
+            )
+        )
+        print(f"create_evaluation: 評価(ID={evaluation.id}) の作成が完了しました。")
+        return {"evaluation_id": evaluation.id}
+    except Exception as e:
+        session.rollback()
+        print(f"デフォルト評価定義作成時にエラー: {e}")
+        raise
+    finally:
+        session.close()
 
 def initialize_sample_data():
     """
@@ -168,7 +191,7 @@ def initialize_sample_data():
     recreate_all_tables()
     initialize_evaluation_perspectives()
     initialize_AISI_preset_data()
-
+    create_preset_evaluation_definitions()
 
 if __name__ == "__main__":
     initialize_sample_data()

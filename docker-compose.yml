@@ -5,9 +5,10 @@ services:
     container_name: postgresdb
     restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=mydb
+      - APP_ENVIRONMENT=DEV
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASSWORD
+      - POSTGRES_DB=$DB_NAME
     ports:
       - "15432:5432"
     volumes:
@@ -17,18 +18,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - gigalogy-dev
   init-db:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: init-db
     environment:
+      APP_ENVIRONMENT: DEV
       PYTHONPATH: /app
-      DB_USER: postgres
-      DB_PASSWORD: password
-      DB_HOST: postgresdb
-      DB_PORT: 5432
-      DB_NAME: mydb
+      DB_USER: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      DB_HOST: $DB_HOST
+      DB_PORT: $DB_PORT
+      DB_NAME: $DB_NAME
     working_dir: /app
     volumes:
       - ./backend:/app
@@ -36,18 +40,24 @@ services:
     depends_on:
       postgresdb:
         condition: service_healthy
+    networks:
+      - gigalogy-dev
   fastapi:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: fastapi
     environment:
+      APP_ENVIRONMENT: DEV
       PYTHONPATH: /app
-      DB_USER: postgres
-      DB_PASSWORD: password
-      DB_HOST: postgresdb
-      DB_PORT: 5432
-      DB_NAME: mydb
+      DB_USER: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      DB_HOST: $DB_HOST
+      DB_PORT: $DB_PORT
+      DB_NAME: $DB_NAME
+      MAIRA_API_HOSTNAME: $MAIRA_API_HOSTNAME
+      MAIRA_API_PORT: $MAIRA_API_PORT
+      OPEN_AI_API_KEY: $OPEN_AI_API_KEY
     working_dir: /app
     volumes:
       - ./backend:/app
@@ -59,6 +69,8 @@ services:
         condition: service_healthy
       init-db:
         condition: service_completed_successfully
+    networks:
+      - gigalogy-dev
   frontend:
     build:
       context: ./frontend
@@ -73,7 +85,13 @@ services:
     command: bash -c "npm run dev -- --host"
     depends_on:
       - fastapi
+    networks:
+      - gigalogy-dev
 
 volumes:
   postgres_data:
   node_modules:
+
+networks:
+  gigalogy-dev:
+    external: true

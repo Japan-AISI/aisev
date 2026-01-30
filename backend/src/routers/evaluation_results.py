@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from src.db.define_tables import EvaluationResult
 from src.manager.evaluation_results_manager import EvaluationResultsManager
@@ -65,14 +65,23 @@ class QuantitativeRequest(BaseModel):
 
 
 @router.get("/evaluation_results/", response_model=List[EvaluationResultResponse])
-def get_all_evaluation_results(db: Session = Depends(get_db)):
+def get_all_evaluation_results(
+    project_key: Optional[str] = Query(None),
+    api_key: Optional[str] = Query(None),
+    gpt_profile_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
     """
     Get all evaluation results
     """
     logger.info("get_all_evaluation_results: 全ての評価結果取得処理を開始します。")
     try:
         evaluation_results = EvaluationResultsManager.get_all_evaluation_results(
-            db)
+            project_key=project_key,
+            api_key=api_key,
+            gpt_profile_id=gpt_profile_id,
+            db=db,
+        )
         if not evaluation_results:
             logger.info("get_all_evaluation_results: 評価結果が見つかりませんでした。")
             raise HTTPException(
