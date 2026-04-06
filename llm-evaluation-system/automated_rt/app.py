@@ -451,7 +451,7 @@ async def export_adversarial_prompts(session_id: str):
 
 def adversarial_prompt_check(prompt_text):
     """Quick checking for denial of generation"""
-    if prompt_text.startwith("申し訳ありません"):
+    if prompt_text.startswith("申し訳ありません"):
         return False
     return True
 

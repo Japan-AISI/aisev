@@ -440,7 +440,7 @@ const textMap = {
     "ターゲットAIは評価対象のため、システムプロンプトを自由に設定できます。": { ja: "ターゲットAIは評価対象のため、システムプロンプトを自由に設定できます。", en: "As the target AI is under evaluation, you can configure its system prompt freely." },
     "ターゲットプレフィックス:": { ja: "ターゲットプレフィックス:", en: "Target prefix:" },
     "デフォルトに戻す": { ja: "デフォルトに戻す", en: "Reset to default" },
-    "デフォルトは http://localhost:11434 です": { ja: "デフォルトは http://localhost:11434 です", en: "The default is http://localhost:11434." },
+    "STR_NOTES_FOR_OLLAMA_ENDPOINT": { ja: "通常の形式は http://**IPアドレス**:11434/v1/ です", en: "The typical format is http://**IP_address**:11434/v1/ ." },
     "ドキュメントのアップロード": { ja: "ドキュメントのアップロード", en: "Upload documents" },
     "ドキュメントファイル（PDF）:": { ja: "ドキュメントファイル（PDF）:", en: "Document file (PDF):" },
     "プロキシURL:": { ja: "プロキシURL:", en: "Proxy URL:" },
