@@ -269,19 +269,14 @@
                                             <small class="text-muted hf-info" style="display: none;">Hugging Faceの場合、デフォルトは "meta-llama/Meta-Llama-3-8B-Instruct"</small>
                                             <small class="text-muted ollama-info" style="display: none;">Ollamaの場合、デフォルトは "llama3" または "llama3:8b"</small>
                                         </div>
-                                        <div class="mb-3">
+                                        <div class="mb-3 openai-only azure-only hf-only">
                                             <label for="reqLlmApiKey" class="form-label">APIキー (オプション):</label>
                                             <input type="password" class="form-control" id="reqLlmApiKey">
-                                            <small class="text-muted">環境変数から取得する場合は空欄</small>
                                         </div>
-                                        <div class="mb-3 azure-only" style="display: none;">
+                                        <div class="mb-3 azure-only ollama-only" style="display: none;">
                                             <label for="reqLlmApiBase" class="form-label">APIエンドポイント:</label>
                                             <input type="text" class="form-control" id="reqLlmApiBase">
-                                        </div>
-                                        <div class="mb-3 ollama-only" style="display: none;">
-                                            <label for="reqLlmApiBase" class="form-label">Ollama APIエンドポイント:</label>
-                                            <input type="text" class="form-control" id="reqLlmApiBase" placeholder="http://localhost:11434">
-                                            <small class="text-muted">デフォルトは http://localhost:11434 です</small>
+                                            <small class="text-muted ollama-only" style="display: none;">STR_NOTES_FOR_OLLAMA_ENDPOINT</small>
                                         </div>
                                         <div hidden class="mb-3">
                                             <label for="reqLlmSystemPrompt" class="form-label">追加システムプロンプト (オプション):</label>
@@ -363,18 +358,14 @@
                                             <small class="text-muted hf-info" style="display: none;">Hugging Faceの場合、デフォルトは "meta-llama/Meta-Llama-3-8B-Instruct"</small>
                                             <small class="text-muted ollama-info" style="display: none;">Ollamaの場合、デフォルトは "llama3" または "llama3:8b"</small>
                                         </div>
-                                        <div class="mb-3">
+                                        <div class="mb-3 openai-only azure-only hf-only">
                                             <label for="advLlmApiKey" class="form-label">APIキー (オプション):</label>
                                             <input type="password" class="form-control" id="advLlmApiKey">
                                         </div>
-                                        <div class="mb-3 azure-only" style="display: none;">
+                                        <div class="mb-3 azure-only ollama-only" style="display: none;">
                                             <label for="advLlmApiBase" class="form-label">APIエンドポイント:</label>
                                             <input type="text" class="form-control" id="advLlmApiBase">
-                                        </div>
-                                        <div class="mb-3 ollama-only" style="display: none;">
-                                            <label for="advLlmApiBase" class="form-label">Ollama APIエンドポイント:</label>
-                                            <input type="text" class="form-control" id="advLlmApiBase" placeholder="http://localhost:11434">
-                                            <small class="text-muted">デフォルトは http://localhost:11434 です</small>
+                                            <small class="text-muted ollama-only" style="display: none;">STR_NOTES_FOR_OLLAMA_ENDPOINT</small>
                                         </div>
                                         <div hidden class="mb-3">
                                             <label for="advLlmSystemPrompt" class="form-label">追加システムプロンプト (オプション):</label>
@@ -458,18 +449,14 @@
                                             <small class="text-muted hf-info" style="display: none;">Hugging Faceの場合、デフォルトは "meta-llama/Meta-Llama-3-8B-Instruct"</small>
                                             <small class="text-muted ollama-info" style="display: none;">Ollamaの場合、デフォルトは "llama3" または "llama3:8b"</small>
                                         </div>
-                                        <div class="mb-3">
+                                        <div class="mb-3 openai-only azure-only hf-only">
                                             <label for="evalLlmApiKey" class="form-label">APIキー (オプション):</label>
                                             <input type="password" class="form-control" id="evalLlmApiKey">
                                         </div>
-                                        <div class="mb-3 azure-only" style="display: none;">
+                                        <div class="mb-3 azure-only ollama-only" style="display: none;">
                                             <label for="evalLlmApiBase" class="form-label">APIエンドポイント:</label>
                                             <input type="text" class="form-control" id="evalLlmApiBase">
-                                        </div>
-                                        <div class="mb-3 ollama-only" style="display: none;">
-                                            <label for="evalLlmApiBase" class="form-label">Ollama APIエンドポイント:</label>
-                                            <input type="text" class="form-control" id="evalLlmApiBase" placeholder="http://localhost:11434">
-                                            <small class="text-muted">デフォルトは http://localhost:11434 です</small>
+                                            <small class="text-muted ollama-only" style="display: none;">STR_NOTES_FOR_OLLAMA_ENDPOINT</small>
                                         </div>
                                         <div hidden class="mb-3">
                                             <label for="evalLlmSystemPrompt" class="form-label">追加システムプロンプト (オプション):</label>
@@ -509,18 +496,14 @@
                                             <small class="text-muted ollama-info" style="display: none;">Ollamaの場合、デフォルトは "llama3" または "llama3:8b"</small>
                                             <small class="text-muted custom-endpoint-only" style="display: none;">カスタムエンドポイントの場合は任意の値を設定できます</small>
                                         </div>
-                                        <div class="mb-3">
+                                        <div class="mb-3 openai-only azure-only hf-only">
                                             <label for="targetLlmApiKey" class="form-label">APIキー (オプション):</label>
                                             <input type="password" class="form-control" id="targetLlmApiKey">
                                         </div>
-                                        <div class="mb-3 azure-only" style="display: none;">
+                                        <div class="mb-3 azure-only ollama-only" style="display: none;">
                                             <label for="targetLlmApiBase" class="form-label">APIエンドポイント:</label>
                                             <input type="text" class="form-control" id="targetLlmApiBase">
-                                        </div>
-                                        <div class="mb-3 ollama-only" style="display: none;">
-                                            <label for="targetLlmApiBase" class="form-label">Ollama APIエンドポイント:</label>
-                                            <input type="text" class="form-control" id="targetLlmApiBase" placeholder="http://localhost:11434">
-                                            <small class="text-muted">デフォルトは http://localhost:11434 です</small>
+                                            <small class="text-muted ollama-only" style="display: none;">STR_NOTES_FOR_OLLAMA_ENDPOINT</small>
                                         </div>
                                         
                                         <!-- カスタムエンドポイント固有の設定フィールド -->
@@ -652,6 +635,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const parentCard = this.closest('.card');
             const azureFields = parentCard.querySelectorAll('.azure-only');
             const ollamaFields = parentCard.querySelectorAll('.ollama-only');
+            const openaiFields = parentCard.querySelectorAll('.openai-only');
+            const hfFields = parentCard.querySelectorAll('.hf-only');
             const hfInfos = parentCard.querySelectorAll('.hf-info');
             const ollamaInfos = parentCard.querySelectorAll('.ollama-info');
             const customEndpointFields = parentCard.querySelectorAll('.custom-endpoint-only');
@@ -660,6 +645,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset all fields
             azureFields.forEach(field => field.style.display = 'none');
             ollamaFields.forEach(field => field.style.display = 'none');
+            openaiFields.forEach(field => field.style.display = 'none');
+            hfFields.forEach(field => field.style.display = 'none');
             hfInfos.forEach(info => info.style.display = 'none');
             ollamaInfos.forEach(info => info.style.display = 'none');
             customEndpointFields.forEach(field => field.style.display = 'none');
@@ -676,6 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modelInput.value = 'llama3';
                 }
             } else if (this.value === 'huggingface') {
+                hfFields.forEach(field => field.style.display = 'block');
                 hfInfos.forEach(info => info.style.display = 'block');
                 
                 // Set the default model name
@@ -690,6 +678,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modelInput.value = 'custom';
                 }
             } else if (this.value === 'openai') {
+                openaiFields.forEach(field => field.style.display = 'block');
                 // Reset to OpenAI's default model
                 if (modelInput.value === 'llama3' || modelInput.value === 'meta-llama/Meta-Llama-3-8B-Instruct' || modelInput.value === 'custom') {
                     const cardHeader = parentCard.querySelector('.card-header');
