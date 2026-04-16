@@ -160,36 +160,25 @@ class OllamaClient(LLMClient):
             api_base: Base URL of Ollama API (If none, the default localhost:11434 will be used)
         """
         self.model_name = model_name
-        self.api_base = api_base or "http://localhost:11434"
-        self.api_url = f"{self.api_base}/api/chat"
+        self.api_base = api_base or "http://localhost:11434/v1/"
+        self.client = openai.AsyncOpenAI(base_url=self.api_base, api_key='dummy_key')
+
     
+    #   Using OpenAI compatible API
     async def generate(self, system_prompt: str, user_prompt: str) -> str:
-        """Get generated responses using the Ollama API"""
+        """Get generated responses using the OpenAI API"""
         try:
-            payload = {
-                "model": self.model_name,
-                "messages": [
+            response = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                "options": {
-                    #"temperature": 0.7,
-                    "num_predict": 4000
-                }
-            }
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.api_url, json=payload) as response:
-                    if response.status != 200:
-                        error_text = await response.text()
-                        return f"エラー: Ollama API呼び出しに失敗しました (ステータス {response.status}): {error_text}"
-                    
-                    result = await response.json()
-                    if "message" in result and "content" in result["message"]:
-                        return result["message"]["content"]
-                    
-                    return str(result)
+                #temperature=0.7,
+                #max_tokens=4000
+                max_completion_tokens=4000
+            )
+            return response.choices[0].message.content
         except Exception as e:
-            print(f"Ollama API error: {e}")
+            print(f"Ollama/OpenAI API error: {e}")
             return f"エラー: {str(e)}"
-
